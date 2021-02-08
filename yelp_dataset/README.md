@@ -11,4 +11,4 @@ Lastly, only the main features of each dataset entry are kept for future uses (e
 
 ## Links
 
-Original public datasets available @ yelp.com/dataset
+Original public datasets available @ [yelp.com/dataset](yelp.com/dataset)
