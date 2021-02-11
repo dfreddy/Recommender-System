@@ -1,16 +1,17 @@
 import json, time, math
 
 '''
-    selecting all reviews by the users selected
+    selecting all reviews for the businesses from Las Vegas
 '''
 
 extention = '.json'
 reviews_filename = 'resources/yelp_academic_dataset_review'
 users_filename = 'resources/yelp_academic_dataset_user_10k'
 trimmed_filename = 'resources/yelp_academic_dataset_review_trimmed_423822'
+biz_filename = 'resources/yelp_academic_dataset_business_Las Vegas'
 
 
-def trim(file, users_list):
+def trimByUsers(file, users_list):
 
   lines = []
   total_reviews_counter = 0
@@ -28,7 +29,7 @@ def trim(file, users_list):
     if not line:
       break
     
-    if isUserListed(json.loads(line)['user_id'], users_list):
+    if isListed(json.loads(line)['user_id'], users_list):
       total_reviews_selected += 1
       lines.append(line.strip())
     
@@ -44,13 +45,56 @@ def trim(file, users_list):
   print('trimmed off ' + str(format(100 - ((total_reviews_selected/total_reviews_counter)*100), '.1f')) + '%')
 
   # save lines to new file
-  newfile_name = reviews_filename + '_trimmed' + extention
+  newfile_name = reviews_filename + '_UserTrimmed' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
   newfile.write(json.dumps(lines, indent=2))
   newfile.close()
   print(newfile_name)
 
-  return
+  return newfile_name
+
+
+def trimByBusinesses(file, biz_list):
+
+  lines = []
+  total_reviews_counter = 0
+  total_reviews_selected = 0
+  old_loading = 0
+
+  print(str(old_loading) + '%')
+  start = time.perf_counter()
+
+  while(True):
+    
+    line = None
+
+    line = file.readline()
+    if not line:
+      break
+    
+    if isListed(json.loads(line)['business_id'], biz_list):
+      total_reviews_selected += 1
+      lines.append(line.strip())
+    
+    total_reviews_counter += 1
+
+    new_loading = math.floor( 100 * (total_reviews_counter / 8021122) )
+    if new_loading > old_loading:
+      old_loading = new_loading
+      end = time.perf_counter()
+      print(str(old_loading) + '% -> ' + str(format((end-start)/60, '.2f')) + 'm')
+    
+  print('selected ' + str(total_reviews_selected) + ' reviews')
+  print('trimmed off ' + str(format(100 - ((total_reviews_selected/total_reviews_counter)*100), '.1f')) + '% from the total entries')
+
+  # save lines to new file
+  newfile_name = reviews_filename + '_BizTrimmed' + extention
+  newfile = open(newfile_name, encoding='utf8', mode='w')
+  newfile.write(json.dumps(lines, indent=2))
+  newfile.close()
+  print(newfile_name)
+
+  return newfile_name
 
 
 def getUsers(filename):
@@ -64,10 +108,21 @@ def getUsers(filename):
   return users
 
 
-def isUserListed(user_id, users_list):
+def getBusinesses(filename):
+  
+  biz_file = open(filename, encoding='utf8', mode='r')
+  data = json.load(biz_file)
+  biz_list = []
+  for i in data:
+    biz_list.append(json.loads(i)['business_id'])
+
+  return biz_list
+
+
+def isListed(item_id, item_list):
   
   found = False
-  if user_id in users_list: found = True
+  if item_id in item_list: found = True
   
   return found
 
@@ -96,7 +151,8 @@ def trim_features(file):
   newfile.write(json.dumps(trimmed_reviews, indent=2))
   newfile.close()
   print(newfile_name)
-  return
+
+  return newfile_name
 
 
 def main():
@@ -110,11 +166,22 @@ def main():
 
   # select reviews from file
   file = open(reviews_filename + extention, encoding='utf8', mode='r')
-  trim(file, users_list)
+  trimByUsers(file, users_list)
   file.close()
   '''
   
-  file = open(trimmed_filename + extention, encoding='utf8', mode='r')
+  # get list of businesses
+  biz_list = getBusinesses(biz_filename + extention)
+  print('found ' + str(len(biz_list)) + ' businesses')
+
+  # select reviews from file
+  file = open(reviews_filename + extention, encoding='utf8', mode='r')
+  trimmed_filename = trimByBusinesses(file, biz_list)
+  file.close()
+
+  # trim off useless features
+  print('trimming features...')
+  file = open(trimmed_filename, encoding='utf8', mode='r')
   trim_features(file)
   file.close()
 

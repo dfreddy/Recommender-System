@@ -1,7 +1,7 @@
 import json, time, math
 
 '''
-    selecting all businesses with valid reviews
+    selecting all businesses from Las Vegas
 '''
 
 extention = '.json'
@@ -53,6 +53,50 @@ def trim(file, biz_dict):
   return
 
 
+# used to select all businesses from Las Vegas
+def selectFromCity(file, city):
+
+  lines = []
+  total_biz_counter = 0
+  total_biz_selected = 0
+  old_loading = 0
+
+  print(str(old_loading) + '%')
+  start = time.perf_counter()
+
+  while(True):
+    
+    line = None
+
+    line = file.readline()
+    if not line:
+      break
+    
+    if json.loads(line)['city'] == city:
+      total_biz_selected += 1
+      lines.append(line.strip())
+    
+    total_biz_counter += 1
+
+    new_loading = math.floor( 100 * (total_biz_counter / 209393) )
+    if new_loading > old_loading:
+      old_loading = new_loading
+      end = time.perf_counter()
+      print(str(old_loading) + '% -> ' + str(format(end-start, '.2f')) + 's')
+    
+  print('selected ' + str(total_biz_selected) + ' reviews from ' + city)
+  print('trimmed off ' + str(format(100 - ((total_biz_selected/total_biz_counter)*100), '.1f')) + '% from the total entries')
+
+  # save lines to new file
+  newfile_name = biz_filename + '_' + city + extention
+  newfile = open(newfile_name, encoding='utf8', mode='w')
+  newfile.write(json.dumps(lines, indent=2))
+  newfile.close()
+  print(newfile_name)
+
+  return newfile_name
+
+
 def getBusinesses(filename):
   
   reviews_file = open(filename, encoding='utf8', mode='r')
@@ -98,6 +142,22 @@ def trim_features(file):
   return
 
 
+def countCity(file, city):
+
+  counter = 0
+
+  while(True):
+
+    line = file.readline()
+    if not line:
+      break
+    
+    if json.loads(line)['city'] == city:
+      counter += 1
+  
+  return counter
+
+
 def main():
 
   '''
@@ -114,7 +174,19 @@ def main():
   file.close()
   '''
 
+  '''
   file = open(trimmed_filename + extention, encoding='utf8', mode='r')
+  trim_features(file)
+  file.close()
+  '''
+  
+  # select all businesses from Las Vegas
+  file = open(biz_filename + extention, encoding='utf8', mode='r')
+  city_filename = selectFromCity(file, 'Las Vegas')
+  file.close()
+
+  # trim the useless features
+  file = open(city_filename, encoding='utf8', mode='r')
   trim_features(file)
   file.close()
 
