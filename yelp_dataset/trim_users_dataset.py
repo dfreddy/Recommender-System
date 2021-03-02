@@ -26,7 +26,7 @@ def trim(file):
   # save lines to new file
   newfile_name = filename + '_10k' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(lines, indent=2))
+  json.dump(lines, newfile, indent=2)
   newfile.close()
   print(newfile_name)
 
@@ -69,17 +69,18 @@ def trimByReviews(file, users_dict):
   # save lines to new file
   newfile_name = filename + '_ReviewsTrimmed' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(lines, indent=2))
+  json.dump(lines, newfile, indent=2)
   newfile.close()
   print(newfile_name)
 
   return newfile_name
 
 
-def trim_features(file):
+def trim_features(file, file_type):
 
   print('starting trimming...')
   trimmed_users = []
+  users_friends = {}
   users = json.load(file)
 
   for u in users:
@@ -92,22 +93,29 @@ def trim_features(file):
     trimmed_users.append({
       'user_id': u['user_id'],
       'name': u['name'],
-      'review_count': u['review_count'],
-      'useful': u['useful'],
-      'funny': u['funny'],
-      'cool': u['cool'],
       'elite': elite,
       'average_stars': u['average_stars']
     })
+
+    users_friends[u['user_id']] = u['friends']
     
-  # save users to new file
-  newfile_name = 'resources/users' + extention
-  newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(trimmed_users, indent=2))
-  newfile.close()
-  print(newfile_name)
+  # save users to file
+  outfile_name = 'resources/users.' + file_type + extention
+  outfile = open(outfile_name, encoding='utf8', mode='w')
+  json.dump(trimmed_users, outfile, indent=2)
+  outfile.close()
+  print(outfile_name)
   
-  return newfile_name
+  # save friendslists to file
+  # note: when opening, use .split() on the items to turn to list
+  #       lists ocupy more space than simple strings
+  friendsfile_name = 'resources/users.friends' + extention
+  friendsfile = open(friendsfile_name, encoding='utf8', mode='w')
+  json.dump(users_friends, friendsfile, indent=2)
+  friendsfile.close()
+  print(friendsfile_name)
+
+  return outfile_name
 
 
 def getReviewsUserIDs(filename):
@@ -134,7 +142,7 @@ def main():
   # file.close()
 
   # file = open(trimmed_filename + extention, encoding='utf8', mode='r')
-  # trim_features(file)
+  # trim_features(file, 'content-based')
   # file.close()
 
   # get reviews ids
@@ -148,7 +156,7 @@ def main():
 
   # trim features
   file = open(selected_filename, encoding='utf8', mode='r')
-  trim_features(file)
+  trim_features(file, 'collaborative')
   file.close()
 
 

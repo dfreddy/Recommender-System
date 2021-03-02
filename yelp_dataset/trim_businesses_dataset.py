@@ -46,7 +46,7 @@ def trim(file, biz_dict):
   # save lines to new file
   newfile_name = biz_filename + '_trimmed' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(lines, indent=2))
+  json.dump(lines, newfile, indent=2)
   newfile.close()
   print(newfile_name)
 
@@ -90,7 +90,7 @@ def selectFromCity(file, city):
   # save lines to new file
   newfile_name = biz_filename + '_' + city + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(lines, indent=2))
+  json.dump(lines, newfile, indent=2)
   newfile.close()
   print(newfile_name)
 
@@ -134,12 +134,15 @@ def trim_features(file):
     })
     
   # save businesses to new file
+  # note: when opening, use .split() on the items to turn to list
+  #       lists ocupy more space than simple strings
   newfile_name = 'resources/businesses' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(trimmed_businesses, indent=2))
+  json.dump(trimmed_businesses, newfile, indent=2)
   newfile.close()
   print(newfile_name)
-  return
+  
+  return newfile_name
 
 
 def countCity(file, city):

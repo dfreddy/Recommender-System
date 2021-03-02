@@ -47,7 +47,7 @@ def trimByUsers(file, users_list):
   # save lines to new file
   newfile_name = reviews_filename + '_UserTrimmed' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(lines, indent=2))
+  json.dump(lines, newfile, indent=2)
   newfile.close()
   print(newfile_name)
 
@@ -90,7 +90,7 @@ def trimByBusinesses(file, biz_list):
   # save lines to new file
   newfile_name = reviews_filename + '_BizTrimmed' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(lines, indent=2))
+  json.dump(lines, newfile, indent=2)
   newfile.close()
   print(newfile_name)
 
@@ -148,7 +148,7 @@ def trim_features(file):
   # save reviews to new file
   newfile_name = 'resources/reviews' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
-  newfile.write(json.dumps(trimmed_reviews, indent=2))
+  json.dump(trimmed_reviews, newfile, indent=2)
   newfile.close()
   print(newfile_name)
 
