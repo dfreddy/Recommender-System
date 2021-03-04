@@ -1,4 +1,4 @@
-import json, time, math
+import json, time, math, csv
 
 '''
     selecting all businesses from Las Vegas
@@ -123,19 +123,13 @@ def trim_features(file):
     b = json.loads(b)
 
     trimmed_businesses.append({
+      'name': b['name'],
       'business_id': b['business_id'],
-      'city': b['city'],
-      'state': b['state'],
       'stars': b['stars'],
-      'review_count': b['review_count'],
-      'is_open': b['is_open'],
-      'attributes': b['attributes'],
       'categories': b['categories']
     })
     
   # save businesses to new file
-  # note: when opening, use .split() on the items to turn to list
-  #       lists ocupy more space than simple strings
   newfile_name = 'resources/businesses' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(trimmed_businesses, newfile, indent=2)
@@ -161,6 +155,28 @@ def countCity(file, city):
   return counter
 
 
+def save_to_csv(file):
+  '''
+      saves businesses file from .json to a simplified .csv
+  '''
+  fields = ['business', 'name', 'rating', 'categories']
+  rows = []
+  businesses = json.load(file)
+
+  for b in businesses:
+    rows.append([
+      b['business_id'],
+      b['name'],
+      str(b['stars']),
+      b['categories']
+    ])
+
+  with open('./resources/businesses.csv', 'w', newline='', encoding='utf-8') as f:
+    write = csv.writer(f)
+    write.writerow(fields)
+    write.writerows(rows)
+
+
 def main():
 
   '''
@@ -183,14 +199,21 @@ def main():
   file.close()
   '''
   
+  '''
   # select all businesses from Las Vegas
   file = open(biz_filename + extention, encoding='utf8', mode='r')
   city_filename = selectFromCity(file, 'Las Vegas')
   file.close()
 
   # trim the useless features
-  file = open(city_filename, encoding='utf8', mode='r')
+  file = open('./resources/yelp_academic_dataset_business_Las Vegas.json', encoding='utf8', mode='r')
   trim_features(file)
+  file.close()
+  '''
+
+  # save to csv
+  file = open('./resources/businesses.collaborative.json', encoding='utf8', mode='r')
+  save_to_csv(file)
   file.close()
 
 

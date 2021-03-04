@@ -1,4 +1,4 @@
-import json, time, math
+import json, time, math, csv
 
 '''
     selecting all reviews for the businesses from Las Vegas
@@ -139,9 +139,6 @@ def trim_features(file):
       'user_id': r['user_id'],
       'review_id': r['review_id'],
       'business_id': r['business_id'],
-      'useful': r['useful'],
-      'funny': r['funny'],
-      'cool': r['cool'],
       'stars': r['stars']
     })
     
@@ -153,6 +150,27 @@ def trim_features(file):
   print(newfile_name)
 
   return newfile_name
+
+
+def save_to_csv(file):
+  '''
+      saves reviews file from .json to a simplified .csv
+  '''
+  fields = ['user', 'business', 'rating']
+  rows = []
+  reviews = json.load(file)
+
+  for r in reviews:
+    rows.append([
+      r['user_id'],
+      r['business_id'],
+      str(r['stars'])
+    ])
+
+  with open('./resources/reviews.csv', 'w', newline='', encoding='utf-8') as f:
+    write = csv.writer(f)
+    write.writerow(fields)
+    write.writerows(rows)
 
 
 def main():
@@ -170,6 +188,7 @@ def main():
   file.close()
   '''
   
+  '''
   # get list of businesses
   biz_list = getBusinesses(biz_filename + extention)
   print('found ' + str(len(biz_list)) + ' businesses')
@@ -178,12 +197,16 @@ def main():
   file = open(reviews_filename + extention, encoding='utf8', mode='r')
   trimmed_filename = trimByBusinesses(file, biz_list)
   file.close()
-
+  
   # trim off useless features
   print('trimming features...')
   file = open(trimmed_filename, encoding='utf8', mode='r')
   trim_features(file)
   file.close()
+  '''
 
+  file = open('./resources/reviews.collaborative.json', encoding='utf8', mode='r')
+  save_to_csv(file)
+  file.close()
 
 main()

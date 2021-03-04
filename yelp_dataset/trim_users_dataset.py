@@ -1,4 +1,4 @@
-import json, time, math
+import json, time, math, csv
 
 '''
     selecting 1/20th of the full users dataset
@@ -135,6 +135,28 @@ def isUserListed(user_id, users_dict):
   return users_dict.get(user_id, False)
 
 
+def save_to_csv(file):
+  '''
+      saves users file from .json to a simplified .csv
+  '''
+  fields = ['user', 'name', 'elite', 'average']
+  rows = []
+  users = json.load(file)
+
+  for u in users:
+    rows.append([
+      u['user_id'],
+      u['name'],
+      str(u['elite']),
+      str(u['average_stars'])
+    ])
+
+  with open('./resources/users.csv', 'w', newline='', encoding='utf-8') as f:
+    write = csv.writer(f)
+    write.writerow(fields)
+    write.writerows(rows)
+
+
 def main():
   
   # file = open(filename + extention, encoding='utf8', mode='r')
@@ -145,6 +167,7 @@ def main():
   # trim_features(file, 'content-based')
   # file.close()
 
+  '''
   # get reviews ids
   users_dict = getReviewsUserIDs('resources/reviews.json')
   print('found ' + str(len(users_dict)) + ' unique users')
@@ -157,6 +180,11 @@ def main():
   # trim features
   file = open(selected_filename, encoding='utf8', mode='r')
   trim_features(file, 'collaborative')
+  file.close()
+  '''
+
+  file = open('./resources/users.collaborative.json', encoding='utf8', mode='r')
+  save_to_csv(file)
   file.close()
 
 

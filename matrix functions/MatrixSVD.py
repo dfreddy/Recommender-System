@@ -1,9 +1,9 @@
 import numpy as np
 
 class MatrixSVD(object):
-  """
-    Stores a matrix as its SVD matrices
-  """
+  '''
+      Stores a matrix as its SVD factorization matrices
+  '''
 
   def __init__(self, matrix):
     self.u, self.s, self.vt = np.linalg.svd(matrix, full_matrices=False)
