@@ -3,6 +3,8 @@ import numpy as np
 class MatrixSVD(object):
   '''
       Stores a matrix as its SVD factorization matrices
+      The matrix format must be as follow:
+        [ [U1I1, U1I2, ...], ... ]
   '''
 
   def __init__(self, matrix):
