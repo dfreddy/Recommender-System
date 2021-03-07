@@ -130,11 +130,10 @@ def trim_features(file):
     })
     
   # save businesses to new file
-  newfile_name = 'resources/businesses' + extention
+  newfile_name = 'resources/Mississauga/businesses' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(trimmed_businesses, newfile, indent=2)
   newfile.close()
-  print(newfile_name)
   
   return newfile_name
 
@@ -171,7 +170,7 @@ def save_to_csv(file):
       b['categories']
     ])
 
-  with open('./resources/businesses.csv', 'w', newline='', encoding='utf-8') as f:
+  with open('./resources/Mississauga/businesses.csv', 'w', newline='', encoding='utf-8') as f:
     write = csv.writer(f)
     write.writerow(fields)
     write.writerows(rows)
@@ -211,10 +210,24 @@ def main():
   file.close()
   '''
 
+  # select all businesses from Toronto
+  file = open(biz_filename + extention, encoding='utf8', mode='r')
+  city_filename = selectFromCity(file, 'Mississauga')
+  file.close()
+
+  # trim the useless features
+  file = open(city_filename, encoding='utf8', mode='r')
+  filename = trim_features(file)
+  file.close()
+
+  print('saved to json')
+
   # save to csv
-  file = open('./resources/businesses.collaborative.json', encoding='utf8', mode='r')
+  file = open(filename, encoding='utf8', mode='r')
   save_to_csv(file)
   file.close()
+
+  print('saved to csv')
 
 
 main()

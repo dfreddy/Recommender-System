@@ -2,3 +2,4 @@ yelp_dataset.tar
 Monograph.pdf
 *.json
 *.csv
+__pycache__

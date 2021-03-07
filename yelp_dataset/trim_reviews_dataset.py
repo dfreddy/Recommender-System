@@ -1,14 +1,14 @@
 import json, time, math, csv
 
 '''
-    selecting all reviews for the businesses from Las Vegas
+    selecting all reviews for the businesses from Toronto
 '''
 
 extention = '.json'
 reviews_filename = 'resources/yelp_academic_dataset_review'
 users_filename = 'resources/yelp_academic_dataset_user_10k'
 trimmed_filename = 'resources/yelp_academic_dataset_review_trimmed_423822'
-biz_filename = 'resources/yelp_academic_dataset_business_Las Vegas'
+biz_filename = 'resources/yelp_academic_dataset_business_Toronto'
 
 
 def trimByUsers(file, users_list):
@@ -143,11 +143,10 @@ def trim_features(file):
     })
     
   # save reviews to new file
-  newfile_name = 'resources/reviews' + extention
+  newfile_name = 'resources/Toronto/reviews' + extention
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(trimmed_reviews, newfile, indent=2)
   newfile.close()
-  print(newfile_name)
 
   return newfile_name
 
@@ -167,7 +166,7 @@ def save_to_csv(file):
       str(r['stars'])
     ])
 
-  with open('./resources/reviews.csv', 'w', newline='', encoding='utf-8') as f:
+  with open('./resources/Toronto/reviews.csv', 'w', newline='', encoding='utf-8') as f:
     write = csv.writer(f)
     write.writerow(fields)
     write.writerows(rows)
@@ -188,7 +187,6 @@ def main():
   file.close()
   '''
   
-  '''
   # get list of businesses
   biz_list = getBusinesses(biz_filename + extention)
   print('found ' + str(len(biz_list)) + ' businesses')
@@ -201,12 +199,13 @@ def main():
   # trim off useless features
   print('trimming features...')
   file = open(trimmed_filename, encoding='utf8', mode='r')
-  trim_features(file)
+  filename = trim_features(file)
   file.close()
-  '''
 
-  file = open('./resources/reviews.collaborative.json', encoding='utf8', mode='r')
+  # save to csv
+  file = open(filename, encoding='utf8', mode='r')
   save_to_csv(file)
   file.close()
+
 
 main()

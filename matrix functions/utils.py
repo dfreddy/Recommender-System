@@ -1,11 +1,10 @@
 import json, pprint, time
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
-
 city = 'Mississauga'
+
 
 def getAllRatingsForItem(item, reviews_df=None):
   '''
@@ -80,6 +79,23 @@ def saveAllRatingsForAllItems(city):
   print('finished')
 
 
+def combineItemsToKey(a, b):
+  
+  return a + ',' + b
+
+
+def getItemsFromKey(key):
+
+  items = key.split(',')
+
+  return items[0], items[1] 
+
+
+def notRepeating(item_a, item_b, dictionary):
+
+  return combineItemsToKey(item_a, item_b) not in dictionary
+
+
 # getAllRatingsForItem('YJ2Y_asLIlbo-uijVugLow')
 # saveAllRatingsForAllItems('Mississauga')
-getAllRatingsForAllItems('Mississauga')
+# getAllRatingsForAllItems('Mississauga')

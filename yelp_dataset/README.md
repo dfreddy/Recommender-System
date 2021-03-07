@@ -10,11 +10,17 @@ The 3 datasets are first trimmed, from 2M user entries to 10k. Each user's revie
 
 ### Collaborative Filtering Sampling
 
-The businesses (read: items) dataset is first trimmed. Only the businesses from the city of Las Vegas remain, around 31k.
+The businesses (read: items) dataset is first trimmed. Only the 3518 businesses from the city of Mississauga remain.
 
-Secondly, the reviews (read: ratings) dataset is trimmed, by removing reviews that aren't of the selected businesses. The reviews are now only 2M, instead of the initial 8M.
+Secondly, the reviews (read: ratings) dataset is trimmed, by removing reviews that aren't of the selected businesses. The reviews are now only 67929, instead of the initial 8M.
 
-Lastly, the users dataset is trimmed down, by removing the users who didn't write the selected reviews.
+Lastly, the users dataset is trimmed down to 25916, by removing the users who didn't write the selected reviews.
+
+The final datasets are:
+
+- ratings ~ 68k
+- items ~ 3.5k
+- users ~ 26k
 
 ### Dimentionality Reduction
 

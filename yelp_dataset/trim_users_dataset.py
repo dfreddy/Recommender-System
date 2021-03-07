@@ -100,7 +100,7 @@ def trim_features(file, file_type):
     users_friends[u['user_id']] = u['friends']
     
   # save users to file
-  outfile_name = 'resources/users.' + file_type + extention
+  outfile_name = 'resources/Toronto/users.' + file_type + extention
   outfile = open(outfile_name, encoding='utf8', mode='w')
   json.dump(trimmed_users, outfile, indent=2)
   outfile.close()
@@ -109,7 +109,7 @@ def trim_features(file, file_type):
   # save friendslists to file
   # note: when opening, use .split() on the items to turn to list
   #       lists ocupy more space than simple strings
-  friendsfile_name = 'resources/users.friends' + extention
+  friendsfile_name = 'resources/Toronto/users.friends' + extention
   friendsfile = open(friendsfile_name, encoding='utf8', mode='w')
   json.dump(users_friends, friendsfile, indent=2)
   friendsfile.close()
@@ -151,7 +151,7 @@ def save_to_csv(file):
       str(u['average_stars'])
     ])
 
-  with open('./resources/users.csv', 'w', newline='', encoding='utf-8') as f:
+  with open('./resources/Toronto/users.csv', 'w', newline='', encoding='utf-8') as f:
     write = csv.writer(f)
     write.writerow(fields)
     write.writerows(rows)
@@ -167,9 +167,8 @@ def main():
   # trim_features(file, 'content-based')
   # file.close()
 
-  '''
   # get reviews ids
-  users_dict = getReviewsUserIDs('resources/reviews.json')
+  users_dict = getReviewsUserIDs('resources/Toronto/reviews.json')
   print('found ' + str(len(users_dict)) + ' unique users')
 
   # get users by reviews
@@ -179,11 +178,11 @@ def main():
 
   # trim features
   file = open(selected_filename, encoding='utf8', mode='r')
-  trim_features(file, 'collaborative')
+  trimmed_filename = trim_features(file, 'collaborative')
   file.close()
-  '''
 
-  file = open('./resources/users.collaborative.json', encoding='utf8', mode='r')
+  # save to csv
+  file = open(trimmed_filename, encoding='utf8', mode='r')
   save_to_csv(file)
   file.close()
 
