@@ -1,4 +1,4 @@
-import utils, json, time, pprint, csv
+import Utils, json, time, pprint, csv
 import pandas as pd
 
 city = 'Mississauga'
@@ -12,7 +12,7 @@ def save_to_csv(calc_type, values):
   rows = []
 
   for key in values:
-    a, b = utils.getItemsFromKey(key)
+    a, b = Utils.getItemsFromKey(key)
 
     rows.append([
       a,
@@ -60,7 +60,7 @@ def cosine_similarity():
       item_b = row_b['business']
     
       # skip if it's the same item OR if their similarity has already been calculated
-      if item_a != item_b and utils.notRepeating(item_a, item_b, similarity_matrix):
+      if item_a != item_b and Utils.notRepeating(item_a, item_b, similarity_matrix):
         # their ratings by user
         item_a_vector = ratings_by_item[item_a]
         item_b_vector = ratings_by_item[item_b]
@@ -75,8 +75,8 @@ def cosine_similarity():
 
           similarity = dot_product / (sum(item_a_vector.values()) * sum(item_b_vector.values()))
 
-          similarity_matrix[utils.combineItemsToKey(item_a, item_b)] = similarity
-          similarity_matrix[utils.combineItemsToKey(item_b, item_a)] = similarity
+          similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity
+          similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity
 
           #print('Cosine similarity(a,b;b,a) = ' + str(format(similarity, '.4f')))
 
@@ -119,7 +119,7 @@ def AMSD_similarity():
       item_b = row_b['business']
     
       # skip if it's the same item OR if their similarity has already been calculated
-      if item_a != item_b and utils.notRepeating(item_a, item_b, similarity_matrix):
+      if item_a != item_b and Utils.notRepeating(item_a, item_b, similarity_matrix):
         # their ratings by user
         item_a_vector = ratings_by_item[item_a]
         item_b_vector = ratings_by_item[item_b]
@@ -138,8 +138,8 @@ def AMSD_similarity():
             similarity_ab = msd * (len(common_users)/len(item_a_vector)) * ((2*len(common_users)) / (len(item_a_vector)+len(item_b_vector)))
             similarity_ba = msd * (len(common_users)/len(item_b_vector)) * ((2*len(common_users)) / (len(item_a_vector)+len(item_b_vector)))
           
-            similarity_matrix[utils.combineItemsToKey(item_a, item_b)] = similarity_ab
-            similarity_matrix[utils.combineItemsToKey(item_b, item_a)] = similarity_ba
+            similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity_ab
+            similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity_ba
 
           #print('AMSD(a,b) = ' + str(format(similarity_ab, '.4f')))
           #print('AMSD(b,a) = ' + str(format(similarity_ba, '.4f')))

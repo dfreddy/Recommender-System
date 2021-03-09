@@ -1,6 +1,6 @@
 import numpy as np
 
-class MatrixSVD(object):
+class Matrix(object):
   '''
       Stores a matrix as its SVD factorization matrices
       The matrix format must be as follow:

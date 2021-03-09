@@ -1,7 +1,9 @@
 import json, pprint, time
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+from tensorflow.core.framework import summary_pb2
 
 city = 'Mississauga'
 
@@ -80,22 +82,23 @@ def saveAllRatingsForAllItems(city):
 
 
 def combineItemsToKey(a, b):
-  
   return a + ',' + b
 
 
 def getItemsFromKey(key):
-
   items = key.split(',')
 
   return items[0], items[1] 
 
 
 def notRepeating(item_a, item_b, dictionary):
-
   return combineItemsToKey(item_a, item_b) not in dictionary
 
 
-# getAllRatingsForItem('YJ2Y_asLIlbo-uijVugLow')
-# saveAllRatingsForAllItems('Mississauga')
-# getAllRatingsForAllItems('Mississauga')
+def clip_value(x):
+  return np.clip(x, 1.0, 5.0)
+
+
+def make_scalar_summary(name, val):
+    return summary_pb2.Summary(value=[summary_pb2.Summary.Value(tag=name, simple_value=val)])
+

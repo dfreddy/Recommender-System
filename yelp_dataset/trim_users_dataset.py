@@ -10,7 +10,6 @@ trimmed_filename = 'resources/yelp_academic_dataset_user_trimmed_10k'
 
 
 def trim(file):
-
   while(True):
     
     lines = []
@@ -34,7 +33,6 @@ def trim(file):
 
 
 def trimByReviews(file, users_dict):
-
   lines = []
   total_users_counter = 0
   total_users_selected = 0
@@ -77,7 +75,6 @@ def trimByReviews(file, users_dict):
 
 
 def trim_features(file, file_type):
-
   print('starting trimming...')
   trimmed_users = []
   users_friends = {}
@@ -119,7 +116,6 @@ def trim_features(file, file_type):
 
 
 def getReviewsUserIDs(filename):
-  
   reviews_file = open(filename, encoding='utf8', mode='r')
   data = json.load(reviews_file)
   users_dict = {}
@@ -131,7 +127,6 @@ def getReviewsUserIDs(filename):
 
 
 def isUserListed(user_id, users_dict):
-    
   return users_dict.get(user_id, False)
 
 
@@ -158,7 +153,6 @@ def save_to_csv(file):
 
 
 def main():
-  
   # file = open(filename + extention, encoding='utf8', mode='r')
   # trim(file)
   # file.close()

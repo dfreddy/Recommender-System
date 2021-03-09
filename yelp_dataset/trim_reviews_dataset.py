@@ -12,7 +12,6 @@ biz_filename = 'resources/yelp_academic_dataset_business_Toronto'
 
 
 def trimByUsers(file, users_list):
-
   lines = []
   total_reviews_counter = 0
   total_reviews_selected = 0
@@ -55,7 +54,6 @@ def trimByUsers(file, users_list):
 
 
 def trimByBusinesses(file, biz_list):
-
   lines = []
   total_reviews_counter = 0
   total_reviews_selected = 0
@@ -98,7 +96,6 @@ def trimByBusinesses(file, biz_list):
 
 
 def getUsers(filename):
-  
   users_file = open(filename, encoding='utf8', mode='r')
   data = json.load(users_file)
   users = []
@@ -109,7 +106,6 @@ def getUsers(filename):
 
 
 def getBusinesses(filename):
-  
   biz_file = open(filename, encoding='utf8', mode='r')
   data = json.load(biz_file)
   biz_list = []
@@ -120,7 +116,6 @@ def getBusinesses(filename):
 
 
 def isListed(item_id, item_list):
-  
   found = False
   if item_id in item_list: found = True
   
@@ -128,7 +123,6 @@ def isListed(item_id, item_list):
 
 
 def trim_features(file):
-
   trimmed_reviews = []
   reviews = json.load(file)
 
@@ -173,7 +167,6 @@ def save_to_csv(file):
 
 
 def main():
-  
   '''
   # get list of users
   start = time.perf_counter()

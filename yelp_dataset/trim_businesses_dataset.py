@@ -11,7 +11,6 @@ trimmed_filename = 'resources/yelp_academic_dataset_business_trimmed_84015'
 
 
 def trim(file, biz_dict):
-
   lines = []
   total_biz_counter = 0
   total_biz_selected = 0
@@ -55,7 +54,6 @@ def trim(file, biz_dict):
 
 # used to select all businesses from Las Vegas
 def selectFromCity(file, city):
-
   lines = []
   total_biz_counter = 0
   total_biz_selected = 0
@@ -98,7 +96,6 @@ def selectFromCity(file, city):
 
 
 def getBusinesses(filename):
-  
   reviews_file = open(filename, encoding='utf8', mode='r')
   data = json.load(reviews_file)
   biz_dict = {}
@@ -110,12 +107,10 @@ def getBusinesses(filename):
 
 
 def isBizListed(biz_id, biz_dict):
-    
   return biz_dict.get(biz_id, False)
 
 
 def trim_features(file):
-
   trimmed_businesses = []
   businesses = json.load(file)
 
@@ -139,7 +134,6 @@ def trim_features(file):
 
 
 def countCity(file, city):
-
   counter = 0
 
   while(True):
@@ -177,7 +171,6 @@ def save_to_csv(file):
 
 
 def main():
-
   '''
   # get dict of biz ids
   start = time.perf_counter()
