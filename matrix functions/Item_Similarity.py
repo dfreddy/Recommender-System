@@ -53,11 +53,11 @@ def cosine_similarity():
 
   for index_a, row_a in items_df.iterrows():
     # iterate every item
-    item_a = row_a['business']
+    item_a = row_a['id']
 
     for index_b, row_b in items_df.iterrows():
       # calculate its similarity with every other item
-      item_b = row_b['business']
+      item_b = row_b['id']
     
       # skip if it's the same item OR if their similarity has already been calculated
       if item_a != item_b and Utils.notRepeating(item_a, item_b, similarity_matrix):
@@ -112,11 +112,11 @@ def AMSD_similarity():
 
   for index_a, row_a in items_df.iterrows():
     # iterate every item
-    item_a = row_a['business']
+    item_a = str(row_a['id'])
 
     for index_b, row_b in items_df.iterrows():
       # calculate its similarity with every other item
-      item_b = row_b['business']
+      item_b = str(row_b['id'])
     
       # skip if it's the same item OR if their similarity has already been calculated
       if item_a != item_b and Utils.notRepeating(item_a, item_b, similarity_matrix):

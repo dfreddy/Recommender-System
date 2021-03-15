@@ -1,18 +1,18 @@
 from __future__ import absolute_import, division, print_function
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 
-def csv_to_df(filname):
-    col_names = ["item_a", "item_b", "similarity"]
-    df = pd.read_csv(filname, header=None, names=col_names, engine='python')
-    df["item_a"] -= 1
-    df["item_b"] -= 1
+def csv_to_df(filename):
+    # col_names = ["item_a", "item_b", "similarity"]
+    df = pd.read_csv(filename, engine='python')
 
     ''' NOTE
         There might be an issue with the trainer with regards to the item columns not being INTs
     '''
 
+    # convert from float64 to float32 to speed up operations
     df["similarity"] = df["similarity"].astype(np.float32)
 
     return df
