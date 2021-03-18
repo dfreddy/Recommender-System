@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 
 def csv_to_df(filename):
@@ -13,6 +14,8 @@ def csv_to_df(filename):
     '''
 
     # convert from float64 to float32 to speed up operations
+    df["item_a"] = df["item_a"].astype(np.int32)
+    df["item_b"] = df["item_b"].astype(np.int32)
     df["similarity"] = df["similarity"].astype(np.float32)
 
     return df

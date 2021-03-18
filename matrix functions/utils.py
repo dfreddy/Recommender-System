@@ -1,7 +1,8 @@
 import json, pprint, time
 import pandas as pd
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from tensorflow.core.framework import summary_pb2
@@ -23,18 +24,29 @@ def inference_svd(item_a_batch, item_b_batch, item_num, dim=5, device="/cpu:0"):
     item_b = tf.nn.embedding_lookup(embd_item_b, item_b_batch, name='embedding_item_b')
 
   with tf.device(device):
-    infer = tf.reduce_sum(tf.multiply(item_a, item_b), 1)
-    infer = tf.add(infer, bias_global)
-    infer = tf.add(infer, bias_item_a)
-    infer = tf.add(infer, bias_item_b, name='svd_inference')
+    # SVD U*S*V calculation
+    inference = tf.reduce_sum(tf.multiply(item_a, item_b), 1)
+    inference = tf.add(inference, bias_global)
+    inference = tf.add(inference, bias_item_a)
+    inference = tf.add(inference, bias_item_b, name='svd_inference')
 
+    # L2 Norm
     regularizer = tf.add(tf.nn.l2_loss(item_a), tf.nn.l2_loss(item_b), name='svd_regularizer')
 
-  return
+  return inference, regularizer
 
-def optimization_function():
+def optimization_function(inference, regularizer, similarity_batch, learning_rate=0.001, reg=0.1, device='/cpu:0'):
+  global_step = tf.train.get_global_step()
+  assert global_step is not None
+  with tf.device(device):
+    l2_loss_function = tf.nn.l2_loss(tf.subtract(inference, similarity_batch))
+    l2_norm = tf.constant(reg, dtype=tf.float32, shape=[], name='l2')
+    cost = tf.add(l2_loss_function, tf.multiply(regularizer, l2_norm))
+    
+    # Optimization done thru derivative calculation using Tensorflow's Adam Optimizer
+    train_operation = tf.train.AdamOptimizer(learning_rate).minimize(cost, global_step=global_step)
 
-  return
+  return cost, train_operation
 
 
 # FUNCTIONS OVER THE CSV DATASETS

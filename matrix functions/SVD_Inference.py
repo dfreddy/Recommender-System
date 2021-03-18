@@ -1,14 +1,15 @@
 import Utils, json, time, pprint, csv, Data_IO
 import pandas as pd
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from tensorflow.core.framework import summary_pb2
 from six import next
 from collections import deque
 
 '''
     Calculates the latent vectors for an incomplete item-item similarity matrix using tensorflow
-    Based on https://github.com/songgc/TF-recomm
+    Based on a solution from https://github.com/songgc/TF-recomm
 '''
 
 np.random.seed(13575)
@@ -25,15 +26,8 @@ def get_data():
       Opens the data .csv and separates it into training and testing datasets
       Changes the data's alphanumeric ids for integer ids
   '''
-  items_df = pd.read_csv('../yelp_dataset/resources/Mississauga/businesses.csv', engine='python')
-  ids_hash = {}
-  for index, row in items_df.iterrows():
-    ids_hash[row['business']] = index
-  print('got new ids')
 
   df = Data_IO.csv_to_df('./resources/AMSD_similarity(L=9).csv')
-  df = df.replace(ids_hash)
-  print('replaced ids')
 
   rows = len(df)
   df = df.iloc[np.random.permutation(rows)].reset_index(drop=True)
@@ -42,7 +36,7 @@ def get_data():
   df_train = df[0:split_index]
   df_test = df[split_index:].reset_index(drop=True)
 
-  return df_train, df_test, ids_hash
+  return df_train, df_test
 
 
 def SVD(train_data, test_data):
@@ -51,9 +45,10 @@ def SVD(train_data, test_data):
       where Sij denotes the similarity between user i and j based on ACOS and AMSD,
       and m is the total number of users.
 
-      Matrix factorization represents the item-item similarity matrix S with two low-rank matrices, A and B.
-      Ai and Bj are the column vectors and indicate the k-dimensional latent feature vectors of item i and j.
-      As such, the value for the predicted similarity S'ij would be the result of Ai.T*Bj
+      SVD Matrix factorization represents the item-item similarity matrix A with two low-rank matrices, U and V;
+      and a diagonal matrix S, which describes the strength (bias) of each latent factor.
+      Ui and Vj are the column vectors and indicate the k-dimensional latent feature vectors of item i and j.
+      As such, the value for the predicted similarity A'ij would be the result of Ui*S*ij*Vj.T
 
       The optimization function can be defined as the sum of:
         - L2 Loss Function 
@@ -82,7 +77,7 @@ def SVD(train_data, test_data):
   
   # PREPARE INFERENCE ALGORITHM
   infer, regularizer = Utils.inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
-  tf.contrib.framework.get_or_create_global_step() # create global_step for the optimizer
+  tf.train.get_or_create_global_step() # create global_step for the optimizer
   _, train_operation = Utils.optimization_function(infer, regularizer, similarity_batch, learning_rate=0.001, reg=0.05, device=DEVICE)
   init_operation = tf.global_variables_initializer()
 
@@ -96,20 +91,16 @@ def SVD(train_data, test_data):
 
     # TRAIN IN BATCHES
     for i in range(EPOCH_MAX * samples_per_batch):
-      print('training...')
+      # print('training...')
 
       if i % samples_per_batch == 0:
         print('---TESTING---')
+        print(i)
 
 
   return
 
 
-'''
 df_train, df_test = get_data()
 SVD(df_train, df_test)
 print("Done!")
-'''
-
-train, test = get_data()
-print(test)
