@@ -10,14 +10,16 @@ from tensorflow.core.framework import summary_pb2
 
 # SVD INFERENCE FUNCTIONS
 
-def inference_svd(item_a_batch, item_b_batch, item_num, dim=5, device="/cpu:0"):
+def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
   with tf.device('/cpu:0'):
+    # get biases for the items in the batch
     bias_global = tf.get_variable('bias_global', shape=[])
     embd_bias_item_a = tf.get_variable("embd_bias_item_a", shape=[item_num])
     embd_bias_item_b = tf.get_variable("embd_bias_item_b", shape=[item_num])
     bias_item_a = tf.nn.embedding_lookup(embd_bias_item_a, item_a_batch, name='bias_item_a')
     bias_item_b = tf.nn.embedding_lookup(embd_bias_item_b, item_b_batch, name='bias_item_b')
     
+    # get latent values for the items in the batch 
     embd_item_a = tf.get_variable('embd_item_a', shape=[item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
     embd_item_b = tf.get_variable('embd_item_b', shape=[item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
     item_a = tf.nn.embedding_lookup(embd_item_a, item_a_batch, name='embedding_item_a')
@@ -35,7 +37,7 @@ def inference_svd(item_a_batch, item_b_batch, item_num, dim=5, device="/cpu:0"):
 
   return inference, regularizer
 
-def optimization_function(inference, regularizer, similarity_batch, learning_rate=0.001, reg=0.1, device='/cpu:0'):
+def optimization_function(inference, regularizer, similarity_batch, learning_rate, reg, device):
   global_step = tf.train.get_global_step()
   assert global_step is not None
   with tf.device(device):
@@ -126,6 +128,10 @@ def saveAllRatingsForAllItems(city):
 
 
 # GENERAL UTILITY FUNCTIONS
+
+def clip(x):
+    return np.clip(x, 0.0, 1.0)
+
 
 def combineItemsToKey(a, b):
   return str(a) + ',' + str(b)

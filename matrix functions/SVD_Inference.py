@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
-from tensorflow.core.framework import summary_pb2
 from six import next
 from collections import deque
 
@@ -14,20 +13,27 @@ from collections import deque
 
 np.random.seed(13575)
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 ITEM_NUM = 3518 # nr of items in the dataset
 DIM = 15 # nr of latent features we want
 EPOCH_MAX = 100
 DEVICE = "/cpu:0"
 
 
-def get_data():
+def get_data_df():
   '''
-      Opens the data .csv and separates it into training and testing datasets
-      Changes the data's alphanumeric ids for integer ids
+      Opens the data .csv and returns as a dataframe
   '''
 
-  df = Data_IO.csv_to_df('./resources/AMSD_similarity(L=9).csv')
+  return Data_IO.csv_to_df('./resources/AMSD_similarity(L=9).csv')
+
+
+def get_epoch_data(df):
+  '''
+      Shuffles the data and separates it into training and testing datasets
+  '''
+
+  df = df.sample(frac=1).reset_index(drop=True)
 
   rows = len(df)
   df = df.iloc[np.random.permutation(rows)].reset_index(drop=True)
@@ -36,10 +42,25 @@ def get_data():
   df_train = df[0:split_index]
   df_test = df[split_index:].reset_index(drop=True)
 
-  return df_train, df_test
+  # PREPARE BATCH DATA
+  iter_train = Data_IO.ShuffleIterator([
+    df_train['item_a'],
+    df_train['item_b'],
+    df_train['similarity']],
+    batch_size=BATCH_SIZE
+    )
+  iter_test = Data_IO.OneEpochIterator([
+    df_test['item_a'],
+    df_test['item_b'],
+    df_test['similarity']],
+    batch_size=-1
+    )
+  samples_per_batch = len(df_train) // BATCH_SIZE
+
+  return iter_train, iter_test, samples_per_batch
 
 
-def SVD(train_data, test_data):
+def SVD(data_df):
   '''
       Let S = {Sij} denote an m*m matrix of item similarity,
       where Sij denotes the similarity between user i and j based on ACOS and AMSD,
@@ -57,50 +78,68 @@ def SVD(train_data, test_data):
       The L2 Norms are added as a regularisation term, in order to let the model generalise well and prevent overfitting
   '''
 
-  # PREPARE BATCH DATA
-  iter_train = Data_IO.ShuffleIterator([
-    train_data['item_a'],
-    train_data['item_b'],
-    train_data['similarity']],
-    batch_size=BATCH_SIZE
-    )
-  iter_test = Data_IO.OneEpochIterator([
-    test_data['item_a'],
-    test_data['item_b'],
-    test_data['similarity']],
-    batch_size=-1
-    )
-  samples_per_batch = len(train_data) // BATCH_SIZE
+  # PREPARE INFERENCE ALGORITHM
   item_a_batch = tf.placeholder(tf.int32, shape=[None], name='id_item_a')
   item_b_batch = tf.placeholder(tf.int32, shape=[None], name='id_item_b')
   similarity_batch = tf.placeholder(tf.float32, shape=[None])
   
-  # PREPARE INFERENCE ALGORITHM
-  infer, regularizer = Utils.inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
+  inference, regularizer = Utils.inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
   tf.train.get_or_create_global_step() # create global_step for the optimizer
-  _, train_operation = Utils.optimization_function(infer, regularizer, similarity_batch, learning_rate=0.001, reg=0.05, device=DEVICE)
+  _, train_operation = Utils.optimization_function(inference, regularizer, similarity_batch, learning_rate=0.001, reg=0.5, device=DEVICE)
   init_operation = tf.global_variables_initializer()
 
   # START TF SESSION
   with tf.Session() as sesh:
     sesh.run(init_operation)
-    summary_writer = tf.summary.FileWriter(logdir="/tmp/svd/log", graph=sesh.graph)
-    print("{} {} {} {}".format("epoch", "train_error", "val_error", "elapsed_time"))
-    errors = deque(maxlen=samples_per_batch)
-    start = time.time()
+    print("{}\t{}\t{}\t{}".format("epoch", "train_error", "val_error", "elapsed_time"))
 
+    # Initialise the data for the first epoch
+    iter_train, iter_test, samples_per_batch = get_epoch_data(data_df)
+    errors = deque(maxlen=samples_per_batch)
+
+    time_start = time.time()
     # TRAIN IN BATCHES
     for i in range(EPOCH_MAX * samples_per_batch):
-      # print('training...')
+      train_items_a, train_items_b, train_similarity_values = next(iter_train)
+      _, train_pred_batch = sesh.run(
+        [train_operation, inference],
+        feed_dict={
+          item_a_batch: train_items_a,
+          item_b_batch: train_items_b,
+          similarity_batch: train_similarity_values
+        })
+      train_pred_batch = Utils.clip(train_pred_batch)
+      errors.append(np.power(train_pred_batch-train_similarity_values, 2))
 
+      # TEST AT THE END OF EACH EPOCH
       if i % samples_per_batch == 0:
-        print('---TESTING---')
-        print(i)
+        train_error = np.sqrt(np.mean(errors))
+        test_error = np.array([])
 
+        for test_items_a, test_items_b, test_similarity_values in iter_test:
+          test_pred_batch = sesh.run(
+            inference,
+            feed_dict={
+              item_a_batch: test_items_a,
+              item_b_batch: test_items_b
+            })
+          test_pred_batch = Utils.clip(test_pred_batch)
+          test_error = np.append(test_error, np.power(test_pred_batch - test_similarity_values, 2))
+
+        time_end = time.time()
+        test_error = np.sqrt(np.mean(test_error))
+        print("{:3d}\t{:f}\t{:f}\t{:0.4f}(s)".format(1 + i // samples_per_batch, train_error, test_error, time_end - time_start))
+        time_start = time_end
+        
+        if 1 + i // samples_per_batch >= 10:
+          break
+
+        # Generate new 80:20 of the dataset for the next epoch
+        iter_train, iter_test, _ = get_epoch_data(data_df)
 
   return
 
 
-df_train, df_test = get_data()
-SVD(df_train, df_test)
+data_df = get_data_df()
+SVD(data_df)
 print("Done!")
