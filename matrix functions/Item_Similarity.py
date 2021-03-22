@@ -53,11 +53,11 @@ def cosine_similarity():
 
   for index_a, row_a in items_df.iterrows():
     # iterate every item
-    item_a = row_a['id']
+    item_a = str(row_a['id'])
 
     for index_b, row_b in items_df.iterrows():
       # calculate its similarity with every other item
-      item_b = row_b['id']
+      item_b = str(row_b['id'])
     
       # skip if it's the same item OR if their similarity has already been calculated
       if item_a != item_b and Utils.notRepeating(item_a, item_b, similarity_matrix):
@@ -127,7 +127,7 @@ def AMSD_similarity():
 
         # calculate similarity if they have common users
         if (len(common_users) > 0):
-          msd, l = 0, pow(3,2)
+          msd, l = 0, pow(4,2)
 
           for user in common_users:
             msd += pow(item_a_vector[user] - item_b_vector[user], 2)
@@ -156,5 +156,5 @@ def AMSD_similarity():
   save_to_csv('AMSD_similarity', similarity_matrix)
 
 
-# cosine_similarity()
-AMSD_similarity()
+cosine_similarity()
+# AMSD_similarity()

@@ -28,14 +28,19 @@ def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
   with tf.device(device):
     # SVD U*S*V calculation
     inference = tf.reduce_sum(tf.multiply(item_a, item_b), 1)
-    inference = tf.add(inference, bias_global)
+    # inference = tf.add(inference, bias_global)
     inference = tf.add(inference, bias_item_a)
     inference = tf.add(inference, bias_item_b, name='svd_inference')
+
+    prediction_matrix = tf.matmul(item_a, item_b, transpose_b=True)
+    # prediction_matrix = tf.add(prediction_matrix, bias_global)
+    prediction_matrix = tf.add(prediction_matrix, bias_item_a)
+    prediction_matrix = tf.add(prediction_matrix, bias_item_b, name='prediction_matrix')
 
     # L2 Norm
     regularizer = tf.add(tf.nn.l2_loss(item_a), tf.nn.l2_loss(item_b), name='svd_regularizer')
 
-  return inference, regularizer
+  return inference, regularizer, prediction_matrix
 
 def optimization_function(inference, regularizer, similarity_batch, learning_rate, reg, device):
   global_step = tf.train.get_global_step()

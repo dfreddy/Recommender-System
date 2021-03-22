@@ -20,12 +20,27 @@ EPOCH_MAX = 100
 DEVICE = "/cpu:0"
 
 
-def get_data_df():
+def get_data_df(filename):
   '''
       Opens the data .csv and returns as a dataframe
   '''
+  return Data_IO.csv_to_df(filename)
 
-  return Data_IO.csv_to_df('./resources/AMSD_similarity(L=9).csv')
+
+def get_entire_data(df):
+  '''
+      Returns the entire DataFrame ready to be applied to the SVD calculations
+  '''
+
+  rows = len(df)
+  df = df.iloc[np.random.permutation(rows)].reset_index(drop=True)
+
+  return Data_IO.OneEpochIterator([
+    df['item_a'],
+    df['item_b'],
+    df['similarity']],
+    batch_size=-1
+    )
 
 
 def get_epoch_data(df):
@@ -83,7 +98,7 @@ def SVD(data_df):
   item_b_batch = tf.placeholder(tf.int32, shape=[None], name='id_item_b')
   similarity_batch = tf.placeholder(tf.float32, shape=[None])
   
-  inference, regularizer = Utils.inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
+  inference, regularizer, prediction_matrix = Utils.inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
   tf.train.get_or_create_global_step() # create global_step for the optimizer
   _, train_operation = Utils.optimization_function(inference, regularizer, similarity_batch, learning_rate=0.001, reg=0.5, device=DEVICE)
   init_operation = tf.global_variables_initializer()
@@ -108,7 +123,7 @@ def SVD(data_df):
           item_b_batch: train_items_b,
           similarity_batch: train_similarity_values
         })
-      train_pred_batch = Utils.clip(train_pred_batch)
+      # train_pred_batch = Utils.clip(train_pred_batch)
       errors.append(np.power(train_pred_batch-train_similarity_values, 2))
 
       # TEST AT THE END OF EACH EPOCH
@@ -123,7 +138,7 @@ def SVD(data_df):
               item_a_batch: test_items_a,
               item_b_batch: test_items_b
             })
-          test_pred_batch = Utils.clip(test_pred_batch)
+          # test_pred_batch = Utils.clip(test_pred_batch)
           test_error = np.append(test_error, np.power(test_pred_batch - test_similarity_values, 2))
 
         time_end = time.time()
@@ -131,15 +146,25 @@ def SVD(data_df):
         print("{:3d}\t{:f}\t{:f}\t{:0.4f}(s)".format(1 + i // samples_per_batch, train_error, test_error, time_end - time_start))
         time_start = time_end
         
-        if 1 + i // samples_per_batch >= 10:
-          break
-
         # Generate new 80:20 of the dataset for the next epoch
         iter_train, iter_test, _ = get_epoch_data(data_df)
+
+    # Generate the full predictions matrix
+    final_items_a = [i for i in range(ITEM_NUM)]
+    final_items_b = [i for i in range(ITEM_NUM)]
+    final_prediction = sesh.run(
+      prediction_matrix,
+      feed_dict={
+        item_a_batch: final_items_a,
+        item_b_batch: final_items_b
+      })
+    return final_prediction
 
   return
 
 
-data_df = get_data_df()
-SVD(data_df)
-print("Done!")
+filename = './resources/AMSD_similarity(L=16).csv'
+# filename = './resources/test.csv'
+data_df = get_data_df(filename)
+final = SVD(data_df)
+print("Done!\n")

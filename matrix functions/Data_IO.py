@@ -22,9 +22,9 @@ def csv_to_df(filename):
 
 
 class ShuffleIterator(object):
-    """
-    Randomly generate batches
-    """
+    '''
+        Randomly generate batches
+    '''
     def __init__(self, inputs, batch_size=10):
         self.inputs = inputs
         self.batch_size = batch_size
@@ -49,9 +49,9 @@ class ShuffleIterator(object):
 
 
 class OneEpochIterator(ShuffleIterator):
-    """
-    Sequentially generate one-epoch batches, typically for test data
-    """
+    '''
+        Sequentially generate one-epoch batches, typically for test data
+    '''
     def __init__(self, inputs, batch_size=10):
         super(OneEpochIterator, self).__init__(inputs, batch_size=batch_size)
         if batch_size > 0:
