@@ -1,4 +1,4 @@
-import Utils, json, time, pprint, csv, Data_IO
+import Utils, json, time, pprint, csv, Data_IO, Matrix
 import pandas as pd
 import numpy as np
 import tensorflow.compat.v1 as tf
@@ -15,8 +15,8 @@ np.random.seed(13575)
 
 BATCH_SIZE = 500
 ITEM_NUM = 3518 # nr of items in the dataset
-DIM = 15 # nr of latent features we want
-EPOCH_MAX = 100
+DIM = 10 # nr of latent features we want
+EPOCH_MAX = 5
 DEVICE = "/cpu:0"
 
 
@@ -100,7 +100,7 @@ def SVD(data_df):
   
   inference, regularizer, prediction_matrix = Utils.inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
   tf.train.get_or_create_global_step() # create global_step for the optimizer
-  _, train_operation = Utils.optimization_function(inference, regularizer, similarity_batch, learning_rate=0.001, reg=0.5, device=DEVICE)
+  _, train_operation = Utils.optimization_function(inference, regularizer, similarity_batch, learning_rate=0.0001, reg=0.5, device=DEVICE)
   init_operation = tf.global_variables_initializer()
 
   # START TF SESSION
@@ -149,15 +149,17 @@ def SVD(data_df):
         # Generate new 80:20 of the dataset for the next epoch
         iter_train, iter_test, _ = get_epoch_data(data_df)
 
-    # Generate the full predictions matrix
-    final_items_a = [i for i in range(ITEM_NUM)]
-    final_items_b = [i for i in range(ITEM_NUM)]
-    final_prediction = sesh.run(
+    # Generate the full predictions SVD matrix
+    final_items_a = [1]
+    final_items_b = [i for i in range(15)]
+    #final_items_a = [i for i in range(ITEM_NUM)]
+    #final_items_b = [i for i in range(ITEM_NUM)]
+    final_prediction = Matrix.PredictionSVD(sesh.run(
       prediction_matrix,
       feed_dict={
         item_a_batch: final_items_a,
         item_b_batch: final_items_b
-      })
+      }))
     return final_prediction
 
   return
@@ -166,5 +168,6 @@ def SVD(data_df):
 filename = './resources/AMSD_similarity(L=16).csv'
 # filename = './resources/test.csv'
 data_df = get_data_df(filename)
-final = SVD(data_df)
+final_prediction = SVD(data_df)
 print("Done!\n")
+print(final_prediction)
