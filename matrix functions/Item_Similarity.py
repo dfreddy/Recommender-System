@@ -1,5 +1,6 @@
 import Utils, json, time, pprint, csv
 import pandas as pd
+import numpy as np
 
 city = 'Mississauga'
 
@@ -66,8 +67,10 @@ def cosine_similarity():
         item_b_vector = ratings_by_item[item_b]
         common_users = set(item_a_vector.keys()).intersection(set(item_b_vector.keys()))
 
+        len_common_users = len(common_users)
+
         # calculate similarity if they have common users
-        if (len(common_users) > 0):
+        if (len_common_users > 0):
           dot_product = 0
 
           for user in common_users:
@@ -124,19 +127,22 @@ def AMSD_similarity():
         item_a_vector = ratings_by_item[item_a]
         item_b_vector = ratings_by_item[item_b]
         common_users = set(item_a_vector.keys()).intersection(set(item_b_vector.keys()))
+        
+        len_common_users = len(common_users)
+        len_item_a_vector = len(item_a_vector)
+        len_item_b_vector = len(item_b_vector)
 
         # calculate similarity if they have common users
-        if (len(common_users) > 0):
+        if (len_common_users > 0):
           msd, l = 0, pow(4,2)
 
           for user in common_users:
             msd += pow(item_a_vector[user] - item_b_vector[user], 2)
-          msd = msd / len(common_users)
-          msd = (l-msd)/l
+          msd = (l - (msd / len_common_users)) / l
 
           if msd > 0.0: # items where the mean difference exceeds the L Threshold are discarded
-            similarity_ab = msd * (len(common_users)/len(item_a_vector)) * ((2*len(common_users)) / (len(item_a_vector)+len(item_b_vector)))
-            similarity_ba = msd * (len(common_users)/len(item_b_vector)) * ((2*len(common_users)) / (len(item_a_vector)+len(item_b_vector)))
+            similarity_ab = msd * (len_common_users/len_item_a_vector) * ((2*len_common_users) / (len_item_a_vector+len_item_b_vector))
+            similarity_ba = msd * (len_common_users/len_item_b_vector) * ((2*len_common_users) / (len_item_a_vector+len_item_b_vector))
           
             similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity_ab
             similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity_ba
@@ -156,5 +162,6 @@ def AMSD_similarity():
   save_to_csv('AMSD_similarity', similarity_matrix)
 
 
-cosine_similarity()
-# AMSD_similarity()
+if __name__ == '__main__':
+  # cosine_similarity()
+  AMSD_similarity()

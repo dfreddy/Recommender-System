@@ -152,12 +152,15 @@ def save_to_csv(file):
   '''
       saves businesses file from .json to a simplified .csv
   '''
-  fields = ['business', 'name', 'rating', 'categories']
+  fields = ['id', 'business', 'name', 'rating', 'categories']
   rows = []
   businesses = json.load(file)
+  id_counter = -1
 
   for b in businesses:
+    id_counter += 1
     rows.append([
+      str(id_counter),
       b['business_id'],
       b['name'],
       str(b['stars']),
@@ -170,7 +173,7 @@ def save_to_csv(file):
     write.writerows(rows)
 
 
-def main():
+if __name__ == '__main__':
   '''
   # get dict of biz ids
   start = time.perf_counter()
@@ -203,7 +206,7 @@ def main():
   file.close()
   '''
 
-  # select all businesses from Toronto
+  # select all businesses from Mississauga
   file = open(biz_filename + extention, encoding='utf8', mode='r')
   city_filename = selectFromCity(file, 'Mississauga')
   file.close()
@@ -221,6 +224,3 @@ def main():
   file.close()
 
   print('saved to csv')
-
-
-main()

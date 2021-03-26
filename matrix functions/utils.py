@@ -115,7 +115,6 @@ def saveAllRatingsForAllItems(city):
   start = time.perf_counter()
 
   for index, row in items_df.iterrows():
-    
     ratings = getAllRatingsForItem(row['business'], reviews_df)
     all_ratings[row['id']] = ratings
 
@@ -132,6 +131,22 @@ def saveAllRatingsForAllItems(city):
   file.close()
 
   print('finished')
+
+
+def getAllUserRatings(user_id):
+  '''
+      Returns all the items rated by the user in the format:
+        { "item_id": rating }
+  '''
+
+  reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/users_all_reviews.csv')
+  df = reviews_df[reviews_df.user.isin([user_id])]
+  ret = {}
+
+  for index, row in df.iterrows():
+    ret[row['business']] = row['rating']
+
+  return ret
 
 
 # GENERAL UTILITY FUNCTIONS
@@ -160,3 +175,8 @@ def clip_value(x):
 
 def make_scalar_summary(name, val):
     return summary_pb2.Summary(value=[summary_pb2.Summary.Value(tag=name, simple_value=val)])
+
+
+if __name__ == '__main__':
+  
+  # print(getAllUserRatings('JnPIjvC0cmooNDfsa9BmXg'))

@@ -165,9 +165,10 @@ def SVD(data_df):
   return
 
 
-filename = './resources/AMSD_similarity(L=16).csv'
-# filename = './resources/test.csv'
-data_df = get_data_df(filename)
-final_prediction = SVD(data_df)
-print("Done!\n")
-print(final_prediction)
+if __name__ == '__main__':
+  filename = './resources/AMSD_similarity(L=16).csv'
+  # filename = './resources/test.csv'
+  data_df = get_data_df(filename)
+  final_prediction = SVD(data_df)
+  print("Done!\n")
+  print(final_prediction)

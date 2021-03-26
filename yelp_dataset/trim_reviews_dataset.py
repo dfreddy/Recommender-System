@@ -1,14 +1,16 @@
 import json, time, math, csv
+import numpy as np
+import pandas as pd
 
 '''
-    selecting all reviews for the businesses from Toronto
+    selecting all reviews for the businesses from Mississauga
 '''
 
 extention = '.json'
 reviews_filename = 'resources/yelp_academic_dataset_review'
 users_filename = 'resources/yelp_academic_dataset_user_10k'
 trimmed_filename = 'resources/yelp_academic_dataset_review_trimmed_423822'
-biz_filename = 'resources/yelp_academic_dataset_business_Toronto'
+biz_filename = 'resources/yelp_academic_dataset_business_Mississauga'
 
 
 def trimByUsers(file, users_list):
@@ -21,14 +23,17 @@ def trimByUsers(file, users_list):
   start = time.perf_counter()
 
   while(True):
-    
     line = None
-
+    '''
+        needs to be line by line because the original json files have the format:
+          { ... }
+          { ... }
+    '''
     line = file.readline()
     if not line:
       break
     
-    if isListed(json.loads(line)['user_id'], users_list):
+    if json.loads(line)['user_id'] in users_list:
       total_reviews_selected += 1
       lines.append(line.strip())
     
@@ -70,7 +75,7 @@ def trimByBusinesses(file, biz_list):
     if not line:
       break
     
-    if isListed(json.loads(line)['business_id'], biz_list):
+    if json.loads(line)['business_id'] in biz_list:
       total_reviews_selected += 1
       lines.append(line.strip())
     
@@ -96,13 +101,9 @@ def trimByBusinesses(file, biz_list):
 
 
 def getUsers(filename):
-  users_file = open(filename, encoding='utf8', mode='r')
-  data = json.load(users_file)
-  users = []
-  for i in data:
-    users.append(json.loads(i)['user_id'])
+  users_df = pd.read_csv(filename)
 
-  return users
+  return np.array(users_df['user'].to_list())
 
 
 def getBusinesses(filename):
@@ -115,29 +116,25 @@ def getBusinesses(filename):
   return biz_list
 
 
-def isListed(item_id, item_list):
-  found = False
-  if item_id in item_list: found = True
-  
-  return found
+def isListed(item_id, item_list):  
+  return np.isin(item_id, item_list)
 
 
-def trim_features(file):
-  trimmed_reviews = []
+def trim_features(file, outname):
   reviews = json.load(file)
+  trimmed_reviews = []
 
   for r in reviews:
     r = json.loads(r)
 
     trimmed_reviews.append({
       'user_id': r['user_id'],
-      'review_id': r['review_id'],
       'business_id': r['business_id'],
       'stars': r['stars']
     })
     
   # save reviews to new file
-  newfile_name = 'resources/Toronto/reviews' + extention
+  newfile_name = outname
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(trimmed_reviews, newfile, indent=2)
   newfile.close()
@@ -145,7 +142,7 @@ def trim_features(file):
   return newfile_name
 
 
-def save_to_csv(file):
+def save_to_csv(file, outname):
   '''
       saves reviews file from .json to a simplified .csv
   '''
@@ -160,45 +157,57 @@ def save_to_csv(file):
       str(r['stars'])
     ])
 
-  with open('./resources/Toronto/reviews.csv', 'w', newline='', encoding='utf-8') as f:
+  with open(outname, 'w', newline='', encoding='utf-8') as f:
+  #with open('./resources/Mississauga/reviews.csv', 'w', newline='', encoding='utf-8') as f:
     write = csv.writer(f)
     write.writerow(fields)
     write.writerows(rows)
 
 
-def main():
+if __name__ == '__main__':
   '''
-  # get list of users
-  start = time.perf_counter()
-  users_list = getUsers(users_filename + extention)
-  end = time.perf_counter()
-  print('time to get users list: ' + str(end-start) + 's')
-
-  # select reviews from file
-  file = open(reviews_filename + extention, encoding='utf8', mode='r')
-  trimByUsers(file, users_list)
-  file.close()
-  '''
-  
   # get list of businesses
   biz_list = getBusinesses(biz_filename + extention)
   print('found ' + str(len(biz_list)) + ' businesses')
 
   # select reviews from file
   file = open(reviews_filename + extention, encoding='utf8', mode='r')
-  trimmed_filename = trimByBusinesses(file, biz_list)
+  trimmed_filename = trimByBusinesses(file, set(biz_list))
   file.close()
   
   # trim off useless features
   print('trimming features...')
   file = open(trimmed_filename, encoding='utf8', mode='r')
-  filename = trim_features(file)
+  filename = trim_features(file, 'resources/Mississauga/reviews.json')
   file.close()
 
   # save to csv
   file = open(filename, encoding='utf8', mode='r')
-  save_to_csv(file)
+  save_to_csv(file, './resources/Mississauga/reviews.csv')
+  file.close()
+  '''
+
+  '''
+  # get list of users
+  start = time.perf_counter()
+  users_list = getUsers('../yelp_dataset/resources/Mississauga/users.csv')
+  end = time.perf_counter()
+  print('time to get users list: ' + str(end-start) + 's')
+  print(str(users_list.size) + ' users')
+
+  # select reviews from file
+  file = open(reviews_filename + extention, encoding='utf8', mode='r')
+  trimmed_filename = trimByUsers(file, set(users_list))
   file.close()
 
+  # trim off useless features
+  print('trimming features...')
+  file = open(trimmed_filename, encoding='utf8', mode='r')
+  filename = trim_features(file, 'resources/Mississauga/users_all_reviews.json')
+  file.close()
 
-main()
+  # save to csv
+  file = open(filename, encoding='utf8', mode='r')
+  save_to_csv(file, './resources/Mississauga/users_all_reviews.csv')
+  file.close()
+  '''

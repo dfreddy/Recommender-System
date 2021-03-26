@@ -3,3 +3,5 @@ Monograph.pdf
 *.json
 *.csv
 __pycache__
+\.vscode
+\venv
