@@ -42,7 +42,7 @@ def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
     # L2 Norm
     regularizer = tf.add(tf.nn.l2_loss(item_a), tf.nn.l2_loss(item_b), name='svd_regularizer')
 
-  return inference, regularizer, {'U': item_a, 'V': item_b, 'bias_U': bias_item_a, 'bias_V': bias_item_b}
+  return inference, regularizer, {'U': item_a, 'VT': item_b, 'bias_U': bias_item_a, 'bias_V': bias_item_b}
 
 def optimization_function(inference, regularizer, similarity_batch, learning_rate, reg, device):
   global_step = tf.train.get_global_step()
@@ -178,5 +178,5 @@ def make_scalar_summary(name, val):
 
 
 if __name__ == '__main__':
-  
+  pass
   # print(getAllUserRatings('JnPIjvC0cmooNDfsa9BmXg'))

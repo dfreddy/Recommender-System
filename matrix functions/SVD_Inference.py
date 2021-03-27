@@ -91,6 +91,8 @@ def SVD(data_df):
         - half the L2 Norm (Frobenius/Euclidian Norm) of the Latent Vectors, multiplied by a penalty lambda
       The L2 Loss Function simply represents the error between the predicted and the real values
       The L2 Norms are added as a regularisation term, in order to let the model generalise well and prevent overfitting
+  
+      Returns the item-item similarity matrix in the PredictionSVD class format
   '''
 
   # PREPARE INFERENCE ALGORITHM
@@ -151,7 +153,7 @@ def SVD(data_df):
 
     # Generate the full predictions SVD matrix
     final_items_a = [1]
-    final_items_b = [i for i in range(15)]
+    final_items_b = [i for i in range(5)]
     #final_items_a = [i for i in range(ITEM_NUM)]
     #final_items_b = [i for i in range(ITEM_NUM)]
     final_prediction = Matrix.PredictionSVD(sesh.run(
@@ -160,15 +162,25 @@ def SVD(data_df):
         item_a_batch: final_items_a,
         item_b_batch: final_items_b
       }))
+
     return final_prediction
 
   return
 
 
-if __name__ == '__main__':
+def get_similarity_matrix():
   filename = './resources/AMSD_similarity(L=16).csv'
   # filename = './resources/test.csv'
   data_df = get_data_df(filename)
+  
+  return SVD(data_df)
+
+
+if __name__ == '__main__':
+  filename = './resources/AMSD_similarity(L=16).csv'
+  #filename = './resources/test.csv'
+  data_df = get_data_df(filename)
   final_prediction = SVD(data_df)
-  print("Done!\n")
-  print(final_prediction)
+  print("Training done!")
+  #final_prediction.log()
+  #final_prediction.save()
