@@ -6,11 +6,12 @@ import pandas as pd
     selecting all reviews for the businesses from Mississauga
 '''
 
+city = 'Mississauga'
 extention = '.json'
 reviews_filename = 'resources/yelp_academic_dataset_review'
 users_filename = 'resources/yelp_academic_dataset_user_10k'
 trimmed_filename = 'resources/yelp_academic_dataset_review_trimmed_423822'
-biz_filename = 'resources/yelp_academic_dataset_business_Mississauga'
+biz_filename = 'resources/yelp_academic_dataset_business_'+city
 
 
 def trimByUsers(file, users_list):
@@ -40,7 +41,7 @@ def trimByUsers(file, users_list):
     total_reviews_counter += 1
 
     new_loading = math.floor( 100 * (total_reviews_counter / 8021122) )
-    if new_loading > old_loading:
+    if new_loading > old_loading and new_loading%5 == 0:
       old_loading = new_loading
       end = time.perf_counter()
       print(str(old_loading) + '% -> ' + str(format((end-start)/60, '.2f')) + 'm')
@@ -113,23 +114,20 @@ def getBusinesses(filename):
   for i in data:
     biz_list.append(json.loads(i)['business_id'])
 
-  return biz_list
-
-
-def isListed(item_id, item_list):  
-  return np.isin(item_id, item_list)
+  return biz_lis
 
 
 def trim_features(file, outname):
   reviews = json.load(file)
   trimmed_reviews = []
+  biz_df = pd.read_csv('../yelp_dataset/resources/'+city+'/businesses.csv')
 
   for r in reviews:
     r = json.loads(r)
-
+    
     trimmed_reviews.append({
       'user_id': r['user_id'],
-      'business_id': r['business_id'],
+      'business_id': getItemIdByBusiness(r['business_id'], biz_df),
       'stars': r['stars']
     })
     
@@ -164,6 +162,21 @@ def save_to_csv(file, outname):
     write.writerows(rows)
 
 
+def getItemIdByBusiness(biz, business_df=None):
+  '''
+      Returns the numeric id based on the item's yelp alphanumeric id
+  '''
+
+  if business_df is None:
+    business_df = pd.read_csv('../yelp_dataset/resources/'+city+'/businesses.csv')
+
+  index = business_df.index[business_df['business'] == biz]
+  print(biz)
+  print(index)
+
+  return business_df["id"].values[index[0]]
+
+
 if __name__ == '__main__':
   '''
   # get list of businesses
@@ -178,19 +191,18 @@ if __name__ == '__main__':
   # trim off useless features
   print('trimming features...')
   file = open(trimmed_filename, encoding='utf8', mode='r')
-  filename = trim_features(file, 'resources/Mississauga/reviews.json')
+  filename = trim_features(file, 'resources/'+city+'/reviews.json')
   file.close()
 
   # save to csv
   file = open(filename, encoding='utf8', mode='r')
-  save_to_csv(file, './resources/Mississauga/reviews.csv')
+  save_to_csv(file, './resources/'+city+'/reviews.csv')
   file.close()
   '''
-
   '''
   # get list of users
   start = time.perf_counter()
-  users_list = getUsers('../yelp_dataset/resources/Mississauga/users.csv')
+  users_list = getUsers('../yelp_dataset/resources/'+city+'/users.csv')
   end = time.perf_counter()
   print('time to get users list: ' + str(end-start) + 's')
   print(str(users_list.size) + ' users')
@@ -199,15 +211,16 @@ if __name__ == '__main__':
   file = open(reviews_filename + extention, encoding='utf8', mode='r')
   trimmed_filename = trimByUsers(file, set(users_list))
   file.close()
-
+  
   # trim off useless features
   print('trimming features...')
-  file = open(trimmed_filename, encoding='utf8', mode='r')
-  filename = trim_features(file, 'resources/Mississauga/users_all_reviews.json')
+  #file = open(trimmed_filename, encoding='utf8', mode='r')
+  file = open('resources/yelp_academic_dataset_review_UserTrimmed.json', encoding='utf8', mode='r')
+  filename = trim_features(file, 'resources/'+city+'/users_all_reviews.json')
   file.close()
 
   # save to csv
   file = open(filename, encoding='utf8', mode='r')
-  save_to_csv(file, './resources/Mississauga/users_all_reviews.csv')
+  save_to_csv(file, './resources/'+city+'/users_all_reviews.csv')
   file.close()
   '''
