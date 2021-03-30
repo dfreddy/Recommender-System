@@ -26,11 +26,11 @@ def get_recommendation(user_id, model_id):
         Input: user's id
         Output: recommended item's id
 
-        R^(a,i) = ra + (E_j sim(i,j) * (r(a,j) - rj + ri))
+        R^(a,i) = ra + (E_j sim(i,j) * (r(a,j) - rj + ri_))
         where,
             ra       = average ratings of user a
             rj       = average ratings of item j
-            ri       = average ratings of item i divided by j number of items rated by the user
+            ri_      = normalized average rating of item i (0..1)
             r(a,j)   = rating user a gave to item j
             sim(i,j) = similarity between items i and j, for every j where r(a,j) exists
     '''
@@ -51,7 +51,8 @@ def get_recommendation(user_id, model_id):
     counter, percentage, total_items, start = 0, 0, 3518, time.perf_counter()
     for index, row in city_items_df.iterrows():
         i = row['id']
-        ri = Utils.getItemData(i, city_items_df)['rating'] / nr_user_rated_items
+        # normalize rating from 1..5 to 0..1
+        ri = (Utils.getItemData(i, city_items_df)['rating'] - 1 ) / 4
 
         # skip item if already rated by user
         if i in user_rated_items_ids:
