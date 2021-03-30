@@ -1,4 +1,4 @@
-import Utils, ItemItem_SVD_Inference, Matrix, operator, time
+import Utils, SVD_Inference, Matrix, operator, time
 import numpy as np
 import pandas as pd
 
@@ -10,7 +10,7 @@ import pandas as pd
 city = 'Mississauga'
 
 def train_model():
-    item_similarity_matrix = ItemItem_SVD_Inference.get_similarity_matrix()
+    item_similarity_matrix = SVD_Inference.get_similarity_matrix()
     item_similarity_matrix.save()
 
 
@@ -26,11 +26,11 @@ def get_recommendation(user_id, model_id):
         Input: user's id
         Output: recommended item's id
 
-        R^(a,i) = ra +(E^k sim(i,j) * (r(a,j) - rj + ri) )
+        R^(a,i) = ra + (E_j sim(i,j) * (r(a,j) - rj + ri))
         where,
             ra       = average ratings of user a
             rj       = average ratings of item j
-            ri       = average ratings of item i
+            ri       = average ratings of item i divided by j number of items rated by the user
             r(a,j)   = rating user a gave to item j
             sim(i,j) = similarity between items i and j, for every j where r(a,j) exists
     '''
@@ -40,6 +40,7 @@ def get_recommendation(user_id, model_id):
 
     user_rated_items = Utils.getUserRatingsForCity(user_id, city)
     user_rated_items_ids = user_rated_items.keys()
+    nr_user_rated_items = len(user_rated_items_ids)
     ra = Utils.getUserData(user_id)['average']
     sim_model = load_model(model_id)
     
@@ -50,20 +51,26 @@ def get_recommendation(user_id, model_id):
     counter, percentage, total_items, start = 0, 0, 3518, time.perf_counter()
     for index, row in city_items_df.iterrows():
         i = row['id']
-        ri = Utils.getItemData(i, city_items_df)['rating']
+        ri = Utils.getItemData(i, city_items_df)['rating'] / nr_user_rated_items
 
         # skip item if already rated by user
         if i in user_rated_items_ids:
             continue
 
-        weighted_sum_top, weighted_sum_bottom = 0, 0
+        weighted_sum = 0
         for j in user_rated_items_ids:
             sim_ij = sim_model.get(i,j)
             r_aj = user_rated_items[j]
             rj = Utils.getItemData(j, city_items_df)['rating']
             weighted_sum += sim_ij * (r_aj - rj + ri)
 
+            if i == 2446:
+                print(f'sim_ij for {j}: {sim_ij}')
+
         final_ratings_dict[i] = ra + weighted_sum
+
+        #if i == 2446:
+        #    return
 
         counter += 1
         new_percentage = int(counter/total_items*100)
@@ -90,3 +97,15 @@ if __name__ == '__main__':
     get_recommendation('no2KpuffhnfD9PIDdlRM9g', '20210330192446')
     
     pass
+
+'''
+    TODO
+
+    learn similarity between 304 and 2446
+    both are bars
+    the similarity is very low
+
+    learn similarity between 304 and 1033
+    one is a bar while the other is a sports shop
+    the similarity is very high
+'''
