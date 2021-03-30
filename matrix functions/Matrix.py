@@ -39,10 +39,10 @@ class PredictionSVD(object):
     os.mkdir(folder_name)
 
     np.save(f'{folder_name}/U', self.u)
-    np.save(f'{folder_name}/VT', self.vt)
+    np.save(f'{folder_name}/V', self.vt)
     np.save(f'{folder_name}/BIAS_U', self.bias_u)
     np.save(f'{folder_name}/BIAS_V', self.bias_v)
-    print('Saved model!')
+    print(f'Saved model: {self.model_id}')
 
   def log(self):
     print(f'model id: {self.model_id}')
@@ -52,9 +52,17 @@ class PredictionSVD(object):
     print(self.vt)
 
   def load(self, model_id):
+    '''
+        Loads model from memory
+        model_id input can be string or int
+
+        TODO
+        verify if model actually exists in memory
+    '''
+
     self.model_id = model_id
-    self.u = np.load(f'./resources/{model_id}/U.npy')
-    self.vt = np.load(f'./resources/{model_id}/V.npy')
-    self.bias_u = np.load(f'./resources/{model_id}/BIAS_U.npy')
-    self.bias_v = np.load(f'./resources/{model_id}/BIAS_V.npy')
+    self.u = np.load(f'./resources/{str(model_id)}/U.npy')
+    self.vt = np.load(f'./resources/{str(model_id)}/V.npy')
+    self.bias_u = np.load(f'./resources/{str(model_id)}/BIAS_U.npy')
+    self.bias_v = np.load(f'./resources/{str(model_id)}/BIAS_V.npy')
     print('Loaded!')

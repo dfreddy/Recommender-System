@@ -5,57 +5,6 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
-from tensorflow.core.framework import summary_pb2
-
-
-# SVD INFERENCE FUNCTIONS
-
-def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
-  with tf.device('/cpu:0'):
-    # get biases for the items in the batch
-    bias_global = tf.get_variable('bias_global', shape=[])
-    embd_bias_item_a = tf.get_variable("embd_bias_item_a", shape=[item_num])
-    embd_bias_item_b = tf.get_variable("embd_bias_item_b", shape=[item_num])
-    bias_item_a = tf.nn.embedding_lookup(embd_bias_item_a, item_a_batch, name='bias_item_a')
-    bias_item_b = tf.nn.embedding_lookup(embd_bias_item_b, item_b_batch, name='bias_item_b')
-    
-    # get latent values for the items in the batch 
-    embd_item_a = tf.get_variable('embd_item_a', shape=[item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
-    embd_item_b = tf.get_variable('embd_item_b', shape=[item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
-    item_a = tf.nn.embedding_lookup(embd_item_a, item_a_batch, name='embedding_item_a')
-    item_b = tf.nn.embedding_lookup(embd_item_b, item_b_batch, name='embedding_item_b')
-
-  with tf.device(device):
-    # SVD U*S*V calculation
-    inference = tf.reduce_sum(tf.multiply(item_a, item_b), 1)
-    # inference = tf.add(inference, bias_global)
-    inference = tf.add(inference, bias_item_a)
-    inference = tf.add(inference, bias_item_b, name='svd_inference')
-
-    '''
-    prediction_matrix = tf.matmul(item_a, item_b, transpose_b=True)
-    prediction_matrix = tf.add(prediction_matrix, bias_global)
-    prediction_matrix = tf.add(prediction_matrix, bias_item_a)
-    prediction_matrix = tf.add(prediction_matrix, bias_item_b, name='prediction_matrix')
-    '''
-
-    # L2 Norm
-    regularizer = tf.add(tf.nn.l2_loss(item_a), tf.nn.l2_loss(item_b), name='svd_regularizer')
-
-  return inference, regularizer, {'U': item_a, 'VT': item_b, 'bias_U': bias_item_a, 'bias_V': bias_item_b}
-
-def optimization_function(inference, regularizer, similarity_batch, learning_rate, reg, device):
-  global_step = tf.train.get_global_step()
-  assert global_step is not None
-  with tf.device(device):
-    l2_loss_function = tf.nn.l2_loss(tf.subtract(inference, similarity_batch))
-    l2_norm = tf.constant(reg, dtype=tf.float32, shape=[], name='l2')
-    cost = tf.add(l2_loss_function, tf.multiply(regularizer, l2_norm))
-    
-    # Optimization done thru derivative calculation using Tensorflow's Adam Optimizer
-    train_operation = tf.train.AdamOptimizer(learning_rate).minimize(cost, global_step=global_step)
-
-  return cost, train_operation
 
 
 # FUNCTIONS OVER THE CSV DATASETS
@@ -66,8 +15,6 @@ def getAllRatingsForItem(item, reviews_df=None):
       Returns all ratings for a certain item, in the format:
         { "user": rating, ... }
   '''
-
-  # start = time.perf_counter()
 
   ratings = {}
 
@@ -133,7 +80,24 @@ def saveAllRatingsForAllItems(city):
   print('finished')
 
 
-def getAllUserRatings(user_id):
+def getUserRatingsForCity(user_id, city):
+  '''
+      Returns all the items rated by the user in the format:
+        { "item_id": rating }
+  '''
+
+  reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/reviews.csv')
+  df = reviews_df[reviews_df.user.isin([user_id])]
+  ret = {}
+
+  for index, row in df.iterrows():
+    item_id = getItemIdByBusiness(row['business'])
+    ret[item_id] = row['rating']
+
+  return ret
+
+
+def getAllUserRatings(user_id, df=None):
   '''
       Returns all the items rated by the user in the format:
         { "item_id": rating }
@@ -144,9 +108,58 @@ def getAllUserRatings(user_id):
   ret = {}
 
   for index, row in df.iterrows():
-    ret[row['business']] = row['rating']
+    item_id = getItemIdByBusiness(row['business'])
+    ret[item_id] = row['rating']
 
   return ret
+
+
+def getUserData(user_id, df=None):
+  '''
+      Returns the user's data as a dict
+  '''
+
+  if df is None:
+    df = pd.read_csv('../yelp_dataset/resources/'+city+'/users.csv')
+  
+  df = df[df.user.isin([user_id])]
+
+  ret = df.to_dict(orient='records')
+  if len(ret) == 1:
+    return ret[0]
+
+  return None
+
+
+def getItemData(biz_id, df=None):
+  '''
+      Returns the business's data as a dict
+      Input is the numeric city id, not the alphanumeric general id; either in string or int format
+  '''
+
+  if df is None:
+    df = pd.read_csv('../yelp_dataset/resources/'+city+'/businesses.csv')
+  
+  df = df[df.id.isin([int(biz_id)])]
+
+  ret = df.to_dict(orient='records')
+  if len(ret) == 1:
+    return ret[0]
+
+  return None
+
+
+def getItemIdByBusiness(biz, business_df=None):
+  '''
+      Returns the numeric id based on the item's yelp alphanumeric id
+  '''
+
+  if business_df is None:
+    business_df = pd.read_csv('../yelp_dataset/resources/'+city+'/businesses.csv')
+
+  index = business_df.index[business_df['business'] == biz]
+
+  return business_df["id"].values[index[0]]
 
 
 # GENERAL UTILITY FUNCTIONS
@@ -173,10 +186,15 @@ def clip_value(x):
   return np.clip(x, 1.0, 5.0)
 
 
-def make_scalar_summary(name, val):
-    return summary_pb2.Summary(value=[summary_pb2.Summary.Value(tag=name, simple_value=val)])
-
-
+# For Testing Purposes
 if __name__ == '__main__':
+  #print(getAllUserRatings('JnPIjvC0cmooNDfsa9BmXg'))
+  #print(getItemIdByBusiness('CV6edrz2Lv_kwyAGdswS2A'))
+  #print(getUserData('dIIKEfOgo0KqUfGQvGikPg'))
+  #print(getItemData('0'))
+  items = getUserRatingsForCity('no2KpuffhnfD9PIDdlRM9g', 'Mississauga')
+  for k in items:
+    print(getItemData(k))
+    print(f'received a rating: {items[k]}')
+  
   pass
-  # print(getAllUserRatings('JnPIjvC0cmooNDfsa9BmXg'))

@@ -1,4 +1,4 @@
-import Utils, json, time, pprint, csv, Data_IO, Matrix
+import json, time, pprint, csv, Data_IO, Matrix
 import pandas as pd
 import numpy as np
 import tensorflow.compat.v1 as tf
@@ -16,7 +16,7 @@ np.random.seed(13575)
 BATCH_SIZE = 500
 ITEM_NUM = 3518 # nr of items in the dataset
 DIM = 10 # nr of latent features we want
-EPOCH_MAX = 5
+EPOCH_MAX = 20
 DEVICE = "/cpu:0"
 
 
@@ -41,6 +41,63 @@ def get_entire_data(df):
     df['similarity']],
     batch_size=-1
     )
+
+
+def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
+  with tf.device('/cpu:0'):
+    # get biases for the items in the batch
+    bias_global = tf.get_variable('bias_global', shape=[])
+    embd_bias_item_a = tf.get_variable("embd_bias_item_a", shape=[item_num])
+    embd_bias_item_b = tf.get_variable("embd_bias_item_b", shape=[item_num])
+    bias_item_a = tf.nn.embedding_lookup(
+        embd_bias_item_a, item_a_batch, name='bias_item_a')
+    bias_item_b = tf.nn.embedding_lookup(
+        embd_bias_item_b, item_b_batch, name='bias_item_b')
+
+    # get latent values for the items in the batch
+    embd_item_a = tf.get_variable('embd_item_a', shape=[
+                                  item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
+    embd_item_b = tf.get_variable('embd_item_b', shape=[
+                                  item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
+    item_a = tf.nn.embedding_lookup(
+        embd_item_a, item_a_batch, name='embedding_item_a')
+    item_b = tf.nn.embedding_lookup(
+        embd_item_b, item_b_batch, name='embedding_item_b')
+
+  with tf.device(device):
+    # SVD U*S*V calculation
+    inference = tf.reduce_sum(tf.multiply(item_a, item_b), 1)
+    # inference = tf.add(inference, bias_global)
+    inference = tf.add(inference, bias_item_a)
+    inference = tf.add(inference, bias_item_b, name='svd_inference')
+
+    '''
+    prediction_matrix = tf.matmul(item_a, item_b, transpose_b=True)
+    prediction_matrix = tf.add(prediction_matrix, bias_global)
+    prediction_matrix = tf.add(prediction_matrix, bias_item_a)
+    prediction_matrix = tf.add(prediction_matrix, bias_item_b, name='prediction_matrix')
+    '''
+
+    # L2 Norm
+    regularizer = tf.add(tf.nn.l2_loss(
+        item_a), tf.nn.l2_loss(item_b), name='svd_regularizer')
+
+  return inference, regularizer, {'U': item_a, 'VT': item_b, 'bias_U': bias_item_a, 'bias_V': bias_item_b}
+
+
+def optimization_function(inference, regularizer, similarity_batch, learning_rate, reg, device):
+  global_step = tf.train.get_global_step()
+  assert global_step is not None
+  with tf.device(device):
+    l2_loss_function = tf.nn.l2_loss(tf.subtract(inference, similarity_batch))
+    l2_norm = tf.constant(reg, dtype=tf.float32, shape=[], name='l2')
+    cost = tf.add(l2_loss_function, tf.multiply(regularizer, l2_norm))
+
+    # Optimization done thru derivative calculation using Tensorflow's Adam Optimizer
+    train_operation = tf.train.AdamOptimizer(
+        learning_rate).minimize(cost, global_step=global_step)
+
+  return cost, train_operation
 
 
 def get_epoch_data(df):
@@ -100,9 +157,9 @@ def SVD(data_df):
   item_b_batch = tf.placeholder(tf.int32, shape=[None], name='id_item_b')
   similarity_batch = tf.placeholder(tf.float32, shape=[None])
   
-  inference, regularizer, prediction_matrix = Utils.inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
+  inference, regularizer, prediction_matrix = inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
   tf.train.get_or_create_global_step() # create global_step for the optimizer
-  _, train_operation = Utils.optimization_function(inference, regularizer, similarity_batch, learning_rate=0.0001, reg=0.5, device=DEVICE)
+  _, train_operation = optimization_function(inference, regularizer, similarity_batch, learning_rate=0.0001, reg=0.5, device=DEVICE)
   init_operation = tf.global_variables_initializer()
 
   # START TF SESSION
@@ -125,7 +182,6 @@ def SVD(data_df):
           item_b_batch: train_items_b,
           similarity_batch: train_similarity_values
         })
-      # train_pred_batch = Utils.clip(train_pred_batch)
       errors.append(np.power(train_pred_batch-train_similarity_values, 2))
 
       # TEST AT THE END OF EACH EPOCH
@@ -140,7 +196,6 @@ def SVD(data_df):
               item_a_batch: test_items_a,
               item_b_batch: test_items_b
             })
-          # test_pred_batch = Utils.clip(test_pred_batch)
           test_error = np.append(test_error, np.power(test_pred_batch - test_similarity_values, 2))
 
         time_end = time.time()
@@ -152,10 +207,10 @@ def SVD(data_df):
         iter_train, iter_test, _ = get_epoch_data(data_df)
 
     # Generate the full predictions SVD matrix
-    final_items_a = [1]
-    final_items_b = [i for i in range(5)]
-    #final_items_a = [i for i in range(ITEM_NUM)]
-    #final_items_b = [i for i in range(ITEM_NUM)]
+    #final_items_a = [1]
+    #final_items_b = [i for i in range(5)]
+    final_items_a = [i for i in range(ITEM_NUM)]
+    final_items_b = [i for i in range(ITEM_NUM)]
     final_prediction = Matrix.PredictionSVD(sesh.run(
       prediction_matrix,
       feed_dict={
@@ -183,4 +238,4 @@ if __name__ == '__main__':
   final_prediction = SVD(data_df)
   print("Training done!")
   #final_prediction.log()
-  #final_prediction.save()
+  final_prediction.save()
