@@ -1,6 +1,6 @@
 import datetime, os
 import numpy as np
-from zipfile import ZipFile
+import pandas as pd
 
 class Matrix(object):
   '''
@@ -27,6 +27,7 @@ class PredictionSVD(object):
       Stores the SVD prediction matrix as arrays of U and V latent features, and U and V biases (S)
   '''
   def __init__(self, prediction=None):
+
     if prediction != None:
       self.u, self.bias_u, self.vt, self.bias_v = prediction['U'], prediction['bias_U'], prediction['VT'], prediction['bias_V']
       self.model_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')

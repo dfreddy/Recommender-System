@@ -165,3 +165,4 @@ def AMSD_similarity():
 if __name__ == '__main__':
   # cosine_similarity()
   AMSD_similarity()
+  

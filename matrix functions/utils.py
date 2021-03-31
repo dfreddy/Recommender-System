@@ -192,9 +192,16 @@ if __name__ == '__main__':
   #print(getItemIdByBusiness('CV6edrz2Lv_kwyAGdswS2A'))
   #print(getUserData('dIIKEfOgo0KqUfGQvGikPg'))
   #print(getItemData('0'))
-  items = getUserRatingsForCity('no2KpuffhnfD9PIDdlRM9g', 'Mississauga')
-  for k in items:
-    print(getItemData(k))
-    print(f'received a rating: {items[k]}')
+  
+  #items = getUserRatingsForCity('no2KpuffhnfD9PIDdlRM9g', 'Mississauga')
+  #for k in items:
+  #  print(getItemData(k))
+  #  print(f'received a rating: {items[k]}')
+
+  
+  #df = pd.read_csv('./resources/AMSD_similarity(L=16).csv')
+  #index = df.index[(df['item_a'] == 0) & (df['item_b'] == 863)]
+  #print(len(index))
+  #print(df["similarity"].values[index[0]])
   
   pass

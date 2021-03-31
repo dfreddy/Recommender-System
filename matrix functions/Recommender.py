@@ -26,13 +26,12 @@ def get_recommendation(user_id, model_id):
         Input: user's id
         Output: recommended item's id
 
-        R^(a,i) = ra + (E_j sim(i,j) * (r(a,j) - rj + ri_))
+        R^(a,i) = ra + (E_j sim(j,i) * (r(a,j) - rj))
         where,
             ra       = average ratings of user a
-            rj       = average ratings of item j
-            ri_      = normalized average rating of item i (0..1)
+            rj       = average rating of item j
             r(a,j)   = rating user a gave to item j
-            sim(i,j) = similarity between items i and j, for every j where r(a,j) exists
+            sim(j,i) = similarity between items j and i, for every j where r(a,j) exists
     '''
 
     # final ratings are stored as { "item_id": final_rating, ... }
@@ -46,6 +45,9 @@ def get_recommendation(user_id, model_id):
     
     # load city items
     city_items_df = pd.read_csv('../yelp_dataset/resources/'+city+'/businesses.csv')
+    rj = {}
+    for j in user_rated_items_ids:
+        rj[j] = Utils.getItemData(j, city_items_df)['rating']
     
     # find the predicted user rating for every item
     counter, percentage, total_items, start = 0, 0, 3518, time.perf_counter()
@@ -53,25 +55,27 @@ def get_recommendation(user_id, model_id):
         i = row['id']
         # normalize rating from 1..5 to 0..1
         ri = (Utils.getItemData(i, city_items_df)['rating'] - 1 ) / 4
+        #ri = Utils.getItemData(i, city_items_df)['rating'] / nr_user_rated_items
 
         # skip item if already rated by user
         if i in user_rated_items_ids:
             continue
 
-        weighted_sum = 0
+        weighted_sum, weighted_bottom = 0, 0
         for j in user_rated_items_ids:
-            sim_ij = sim_model.get(i,j)
+            sim_ji = sim_model.get(j,i)
             r_aj = user_rated_items[j]
-            rj = Utils.getItemData(j, city_items_df)['rating']
-            weighted_sum += sim_ij * (r_aj - rj + ri)
 
-            if i == 2446:
-                print(f'sim_ij for {j}: {sim_ij}')
+            weighted_sum += sim_ji * (r_aj - rj[j] + 4) / 2
+            weighted_bottom += abs(sim_ji)
 
-        final_ratings_dict[i] = ra + weighted_sum
+            #if i == 2446:
+            #    print(f'sim_ji for {j}: {sim_ji}')
+
+        final_ratings_dict[i] = ra + (weighted_sum/weighted_bottom)
 
         #if i == 2446:
-        #    return
+        #    print(weighted_sum)
 
         counter += 1
         new_percentage = int(counter/total_items*100)
@@ -95,8 +99,36 @@ def get_recommendation(user_id, model_id):
 # For Testing Purposes
 if __name__ == '__main__':
     #train_model()
-    get_recommendation('no2KpuffhnfD9PIDdlRM9g', '20210330192446')
+
+    #get_recommendation('no2KpuffhnfD9PIDdlRM9g', '20210331011104')
+    #get_recommendation('iX1IIVWt5__u7ykkczLsRA', '20210331033705')
+    get_recommendation('GlxJs5r01_yqIgb4CYtiog', '20210331033705')
     
+    '''
+    model = load_model('20210331033705')
+
+    similarities = {}
+    i, k = 0, 3518
+    while i <= k-1:
+        similarities[i] = model.get(304,i)
+        i += 1
+
+    sorted_similarities = sorted(similarities.items(), key=operator.itemgetter(1), reverse=False)
+    i, k = 0, 5
+    print(f'top {k} items for item 304')
+    while i < k:
+        print(sorted_similarities[i])
+        print(Utils.getItemData(sorted_similarities[i][0]))
+        i += 1
+        
+    '''
+    '''
+    model = load_model('20210331033705')
+    print(model.get(304,3049))
+    print(model.get(744,3049))
+    print(model.get(2122,3049))
+    '''    
+
     pass
 
 '''

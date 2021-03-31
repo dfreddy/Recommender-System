@@ -13,10 +13,10 @@ from collections import deque
 
 np.random.seed(13575)
 
-BATCH_SIZE = 500
+BATCH_SIZE = 200
 ITEM_NUM = 3518 # nr of items in the dataset
-DIM = 10 # nr of latent features we want
-EPOCH_MAX = 20
+DIM = 15 # nr of latent features we want
+EPOCH_MAX = 10
 DEVICE = "/cpu:0"
 
 
@@ -49,20 +49,14 @@ def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
     bias_global = tf.get_variable('bias_global', shape=[])
     embd_bias_item_a = tf.get_variable("embd_bias_item_a", shape=[item_num])
     embd_bias_item_b = tf.get_variable("embd_bias_item_b", shape=[item_num])
-    bias_item_a = tf.nn.embedding_lookup(
-        embd_bias_item_a, item_a_batch, name='bias_item_a')
-    bias_item_b = tf.nn.embedding_lookup(
-        embd_bias_item_b, item_b_batch, name='bias_item_b')
+    bias_item_a = tf.nn.embedding_lookup(embd_bias_item_a, item_a_batch, name='bias_item_a')
+    bias_item_b = tf.nn.embedding_lookup(embd_bias_item_b, item_b_batch, name='bias_item_b')
 
     # get latent values for the items in the batch
-    embd_item_a = tf.get_variable('embd_item_a', shape=[
-                                  item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
-    embd_item_b = tf.get_variable('embd_item_b', shape=[
-                                  item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
-    item_a = tf.nn.embedding_lookup(
-        embd_item_a, item_a_batch, name='embedding_item_a')
-    item_b = tf.nn.embedding_lookup(
-        embd_item_b, item_b_batch, name='embedding_item_b')
+    embd_item_a = tf.get_variable('embd_item_a', shape=[item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
+    embd_item_b = tf.get_variable('embd_item_b', shape=[item_num, dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
+    item_a = tf.nn.embedding_lookup(embd_item_a, item_a_batch, name='embedding_item_a')
+    item_b = tf.nn.embedding_lookup(embd_item_b, item_b_batch, name='embedding_item_b')
 
   with tf.device(device):
     # SVD U*S*V calculation
@@ -79,8 +73,7 @@ def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
     '''
 
     # L2 Norm
-    regularizer = tf.add(tf.nn.l2_loss(
-        item_a), tf.nn.l2_loss(item_b), name='svd_regularizer')
+    regularizer = tf.add(tf.nn.l2_loss(item_a), tf.nn.l2_loss(item_b), name='svd_regularizer')
 
   return inference, regularizer, {'U': item_a, 'VT': item_b, 'bias_U': bias_item_a, 'bias_V': bias_item_b}
 
@@ -91,11 +84,12 @@ def optimization_function(inference, regularizer, similarity_batch, learning_rat
   with tf.device(device):
     l2_loss_function = tf.nn.l2_loss(tf.subtract(inference, similarity_batch))
     l2_norm = tf.constant(reg, dtype=tf.float32, shape=[], name='l2')
+    zeroes_penalty = tf.nn.l2_loss(tf.subtract(tf.abs(inference), inference))
     cost = tf.add(l2_loss_function, tf.multiply(regularizer, l2_norm))
+    cost = tf.add(cost, zeroes_penalty)
 
     # Optimization done thru derivative calculation using Tensorflow's Adam Optimizer
-    train_operation = tf.train.AdamOptimizer(
-        learning_rate).minimize(cost, global_step=global_step)
+    train_operation = tf.train.AdamOptimizer(learning_rate).minimize(cost, global_step=global_step)
 
   return cost, train_operation
 
@@ -159,7 +153,7 @@ def SVD(data_df):
   
   inference, regularizer, prediction_matrix = inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
   tf.train.get_or_create_global_step() # create global_step for the optimizer
-  _, train_operation = optimization_function(inference, regularizer, similarity_batch, learning_rate=0.0001, reg=0.5, device=DEVICE)
+  _, train_operation = optimization_function(inference, regularizer, similarity_batch, learning_rate=0.0001, reg=0.005, device=DEVICE)
   init_operation = tf.global_variables_initializer()
 
   # START TF SESSION
@@ -207,7 +201,7 @@ def SVD(data_df):
         iter_train, iter_test, _ = get_epoch_data(data_df)
 
     # Generate the full predictions SVD matrix
-    #final_items_a = [1]
+    #final_items_a = [304]
     #final_items_b = [i for i in range(5)]
     final_items_a = [i for i in range(ITEM_NUM)]
     final_items_b = [i for i in range(ITEM_NUM)]
