@@ -178,7 +178,6 @@ def getItemIdByBusiness(biz, business_df=None):
 
 
 if __name__ == '__main__':
-  '''
   # get list of businesses
   biz_list = getBusinesses(biz_filename + extention)
   print('found ' + str(len(biz_list)) + ' businesses')
@@ -198,7 +197,6 @@ if __name__ == '__main__':
   file = open(filename, encoding='utf8', mode='r')
   save_to_csv(file, './resources/'+city+'/reviews.csv')
   file.close()
-  '''
   '''
   # get list of users
   start = time.perf_counter()
