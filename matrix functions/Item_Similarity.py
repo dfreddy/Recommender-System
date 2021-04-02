@@ -2,7 +2,7 @@ import Utils, json, time, pprint, csv
 import pandas as pd
 import numpy as np
 
-city = 'Mississauga'
+city = 'Toronto'
 
 
 def save_to_csv(calc_type, values):
@@ -122,7 +122,12 @@ def AMSD_similarity():
       item_b = str(row_b['id'])
     
       # skip if it's the same item OR if their similarity has already been calculated
-      if item_a != item_b and Utils.notRepeating(item_a, item_b, similarity_matrix):
+      if Utils.notRepeating(item_a, item_b, similarity_matrix):
+        if item_a == item_b:
+          similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = 1
+          similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = 1
+          continue
+
         # their ratings by user
         item_a_vector = ratings_by_item[item_a]
         item_b_vector = ratings_by_item[item_b]
@@ -159,7 +164,7 @@ def AMSD_similarity():
         t = (end-start)/60
         print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 'm ... ' + str(format(100*t/new_percentage, '.2f')) + 'm')
 
-  save_to_csv('AMSD_similarity', similarity_matrix)
+  save_to_csv('AMSD_similarity(L=16, Toronto)', similarity_matrix)
 
 
 if __name__ == '__main__':

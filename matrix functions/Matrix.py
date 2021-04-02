@@ -29,11 +29,11 @@ class PredictionSVD(object):
   def __init__(self, prediction=None):
 
     if prediction != None:
-      self.u, self.bias_u, self.vt, self.bias_v = prediction['U'], prediction['bias_U'], prediction['VT'], prediction['bias_V']
+      self.u, self.bias_u, self.vt, self.bias_v, self.bias = prediction['U'], prediction['bias_U'], prediction['VT'], prediction['bias_V'], prediction['bias']
       self.model_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
   def get(self, x, y):
-    return np.float32(self.bias_u[x] + self.bias_v[y] + np.sum(np.multiply(self.u[x], self.vt[y])))
+    return np.float32(self.bias + self.bias_u[x] + self.bias_v[y] + np.sum(np.multiply(self.u[x], self.vt[y])))
 
   def save(self):
     folder_name = f'./resources/{self.model_id}'
@@ -43,6 +43,7 @@ class PredictionSVD(object):
     np.save(f'{folder_name}/V', self.vt)
     np.save(f'{folder_name}/BIAS_U', self.bias_u)
     np.save(f'{folder_name}/BIAS_V', self.bias_v)
+    np.save(f'{folder_name}/BIAS', self.bias)
     print(f'Saved model: {self.model_id}')
 
   def log(self):
@@ -66,4 +67,5 @@ class PredictionSVD(object):
     self.vt = np.load(f'./resources/{str(model_id)}/V.npy')
     self.bias_u = np.load(f'./resources/{str(model_id)}/BIAS_U.npy')
     self.bias_v = np.load(f'./resources/{str(model_id)}/BIAS_V.npy')
+    self.bias = np.load(f'./resources/{str(model_id)}/BIAS.npy')
     print('Loaded!')

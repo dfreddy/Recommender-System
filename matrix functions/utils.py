@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 
 
 # FUNCTIONS OVER THE CSV DATASETS
-city = 'Mississauga'
+city = 'Toronto'
 
 def getAllRatingsForItem(item, reviews_df=None):
   '''
@@ -91,7 +91,7 @@ def getUserRatingsForCity(user_id, city):
   ret = {}
 
   for index, row in df.iterrows():
-    item_id = getItemIdByBusiness(row['business'])
+    item_id = getItemIdByBusiness(row['business'], city_name=city)
     ret[item_id] = row['rating']
 
   return ret
@@ -149,15 +149,22 @@ def getItemData(biz_id, df=None):
   return None
 
 
-def getItemIdByBusiness(biz, business_df=None):
+def getItemIdByBusiness(biz, business_df=None, city_name=None):
   '''
       Returns the numeric id based on the item's yelp alphanumeric id
   '''
 
+  if city_name is None:
+    city_name = city
+
   if business_df is None:
-    business_df = pd.read_csv('../yelp_dataset/resources/'+city+'/businesses.csv')
+    business_df = pd.read_csv('../yelp_dataset/resources/'+city_name+'/businesses.csv')
 
   index = business_df.index[business_df['business'] == biz]
+
+  if len(index) == 0:
+    print(biz)
+    print(business_df['business'])
 
   return business_df["id"].values[index[0]]
 
@@ -204,4 +211,6 @@ if __name__ == '__main__':
   #print(len(index))
   #print(df["similarity"].values[index[0]])
   
+  saveAllRatingsForAllItems('Toronto')
+
   pass

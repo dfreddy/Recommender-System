@@ -13,8 +13,10 @@ from collections import deque
 
 np.random.seed(13575)
 
-BATCH_SIZE = 200
-ITEM_NUM = 3518 # nr of items in the dataset
+#BATCH_SIZE = 200
+BATCH_SIZE = 800
+#ITEM_NUM = 3518 # nr of items in the dataset
+ITEM_NUM = 2846 # nr of items in the dataset
 DIM = 15 # nr of latent features we want
 EPOCH_MAX = 10
 DEVICE = "/cpu:0"
@@ -61,7 +63,7 @@ def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
   with tf.device(device):
     # SVD U*S*V calculation
     inference = tf.reduce_sum(tf.multiply(item_a, item_b), 1)
-    # inference = tf.add(inference, bias_global)
+    inference = tf.add(inference, bias_global)
     inference = tf.add(inference, bias_item_a)
     inference = tf.add(inference, bias_item_b, name='svd_inference')
 
@@ -75,7 +77,7 @@ def inference_svd(item_a_batch, item_b_batch, item_num, dim, device):
     # L2 Norm
     regularizer = tf.add(tf.nn.l2_loss(item_a), tf.nn.l2_loss(item_b), name='svd_regularizer')
 
-  return inference, regularizer, {'U': item_a, 'VT': item_b, 'bias_U': bias_item_a, 'bias_V': bias_item_b}
+  return inference, regularizer, {'U': item_a, 'VT': item_b, 'bias_U': bias_item_a, 'bias_V': bias_item_b, 'bias': bias_global}
 
 
 def optimization_function(inference, regularizer, similarity_batch, learning_rate, reg, device):
@@ -84,8 +86,9 @@ def optimization_function(inference, regularizer, similarity_batch, learning_rat
   with tf.device(device):
     l2_loss_function = tf.nn.l2_loss(tf.subtract(inference, similarity_batch))
     l2_norm = tf.constant(reg, dtype=tf.float32, shape=[], name='l2')
-    zeroes_penalty = tf.nn.l2_loss(tf.subtract(tf.abs(inference), inference))
     cost = tf.add(l2_loss_function, tf.multiply(regularizer, l2_norm))
+    #zeroes_penalty = tf.nn.l2_loss(tf.subtract(tf.abs(inference), inference))
+    zeroes_penalty = tf.reduce_sum(tf.subtract(tf.abs(inference), inference))
     cost = tf.add(cost, zeroes_penalty)
 
     # Optimization done thru derivative calculation using Tensorflow's Adam Optimizer
@@ -100,7 +103,6 @@ def get_epoch_data(df):
   '''
 
   df = df.sample(frac=1).reset_index(drop=True)
-
   rows = len(df)
   df = df.iloc[np.random.permutation(rows)].reset_index(drop=True)
   split_index = int(rows * 0.8)
@@ -153,7 +155,7 @@ def SVD(data_df):
   
   inference, regularizer, prediction_matrix = inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
   tf.train.get_or_create_global_step() # create global_step for the optimizer
-  _, train_operation = optimization_function(inference, regularizer, similarity_batch, learning_rate=0.0001, reg=0.005, device=DEVICE)
+  _, train_operation = optimization_function(inference, regularizer, similarity_batch, learning_rate=0.0001, reg=0.01, device=DEVICE)
   init_operation = tf.global_variables_initializer()
 
   # START TF SESSION
@@ -226,7 +228,7 @@ def get_similarity_matrix():
 
 
 if __name__ == '__main__':
-  filename = './resources/AMSD_similarity(L=16).csv'
+  filename = './resources/AMSD_similarity(L=16, Toronto).csv'
   #filename = './resources/test.csv'
   data_df = get_data_df(filename)
   final_prediction = SVD(data_df)
