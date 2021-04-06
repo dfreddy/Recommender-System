@@ -2,13 +2,9 @@ import Utils, SVD_Inference, Matrix, operator, time, math
 import numpy as np
 import pandas as pd
 
-''' TODO
-    In order to evaluate the RMSE of the Recommender System
-    run a version of get_recommendation where the only items calculated are the ones already rated by the user
-'''
 
 CITY = 'Toronto'
-MODEL = '20210402190821'
+MODEL = '20210406155019'
 
 def train_model():
     item_similarity_matrix = SVD_Inference.get_similarity_matrix()
@@ -126,25 +122,30 @@ def test_model(model_id):
     # load city items
     city_items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
 
-    # load a random portion of 1% of users
+    # load a random % of users
     users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
     users_df = users_df.sample(frac=1).reset_index(drop=True)
     rows = len(users_df)
     users_df = users_df.iloc[np.random.permutation(rows)].reset_index(drop=True)
-    split_index = int(rows * 0.01)
+    split_index = int(rows * 0.02)
     users_df = users_df[0:split_index]
     total_users = len(users_df)
 
     # iterate users
     start = time.perf_counter()
     counter, percentage = 0, 0
+    print("{}\t{}\t{}\t{}".format("progress", "total time", "RMSE", "MD"))
     for index, row in users_df.iterrows():
         # get user data
         user_id = row['user']
         user_rated_items = Utils.getUserRatingsForCity(user_id, CITY)
         user_rated_items_ids = user_rated_items.keys()
         nr_user_rated_items = len(user_rated_items_ids)
-        ra = Utils.getUserData(user_id)['average']
+        if nr_user_rated_items < 5:
+            counter += 1
+            continue
+
+        ra = Utils.getUserData(user_id, users_df)['average']
         
         # find the predicted user rating for every item they've already rated
         for i in user_rated_items_ids:
@@ -180,7 +181,7 @@ def test_model(model_id):
                 t = (end-start)/60
                 rmse = format(np.sqrt(np.mean(errors)), '.3f')
                 md = format(np.mean(deviations), '.1f')
-                print(str(new_percentage) + '% -> ' + str(format(t, '.1f')) + 'm -> ' + str(rmse) + ' -> ' + str(md))
+                print("{}\t\t{}\t\t{}\t{}".format(str(new_percentage) + '%', str(format(t, '.1f')) + 'm', rmse, md))
 
     rmse = np.sqrt(np.mean(errors))
     md = np.mean(deviations)

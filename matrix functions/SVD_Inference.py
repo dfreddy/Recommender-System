@@ -13,7 +13,7 @@ from collections import deque
 
 np.random.seed(13575)
 
-#BATCH_SIZE = 200
+#BATCH_SIZE = 100
 BATCH_SIZE = 800
 #ITEM_NUM = 3518 # nr of items in the dataset
 ITEM_NUM = 2846 # nr of items in the dataset
@@ -228,8 +228,9 @@ def get_similarity_matrix():
 
 
 if __name__ == '__main__':
+  #filename = './resources/AMSD_similarity(L=16, Mississauga).csv'
   filename = './resources/AMSD_similarity(L=16, Toronto).csv'
-  #filename = './resources/test.csv'
+  
   data_df = get_data_df(filename)
   final_prediction = SVD(data_df)
   print("Training done!")
