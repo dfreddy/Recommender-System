@@ -47,7 +47,7 @@ def selectFromCity(file):
   print('trimmed off ' + str(format(100 - ((total_biz_selected/total_biz_counter)*100), '.1f')) + '% from the total entries')
 
   # save lines to new file
-  newfile_name = 'resources/trim by review count/'+city+'/businesses_before_trimming.json'
+  newfile_name = 'resources/'+city+'/businesses_before_trimming.json'
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(lines, newfile, indent=2)
   newfile.close()
@@ -70,7 +70,7 @@ def trim_biz_features(file):
     })
     
   # save businesses to new file
-  newfile_name = 'resources/trim by review count/'+city+'/businesses_trimmed.json'
+  newfile_name = 'resources/'+city+'/businesses.json'
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(trimmed_businesses, newfile, indent=2)
   newfile.close()
@@ -151,7 +151,7 @@ def trimByBusinesses(file, biz_list):
   print('trimmed off ' + str(format(100 - ((total_reviews_selected/total_reviews_counter)*100), '.1f')) + '% from the total entries')
 
   # save lines to new file
-  newfile_name = 'resources/trim by review count/'+city+'/reviews_before_trimming.json'
+  newfile_name = 'resources/'+city+'/reviews_before_trimming.json'
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(lines, newfile, indent=2)
   newfile.close()
@@ -170,12 +170,12 @@ def trim_reviews_features(file, biz_csv):
     
     trimmed_reviews.append({
       'user_id': r['user_id'],
-      'business_id': str(getItemIdByBusiness(r['business_id'], biz_df)),
+      'business_id': r['business_id'],
       'stars': str(r['stars'])
     })
-    
+  
   # save reviews to new file
-  newfile_name = 'resources/trim by review count/'+city+'/reviews_trimmed.json'
+  newfile_name = 'resources/'+city+'/reviews.json'
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(trimmed_reviews, newfile, indent=2)
   newfile.close()
@@ -263,7 +263,7 @@ def trimByReviews(file, users_dict):
   print('trimmed off ' + str(format(100 - ((total_users_selected/total_users_counter)*100), '.1f')) + '% from the total entries')
 
   # save lines to new file
-  newfile_name = 'resources/trim by review count/'+city+'/users_before_trimming.json'
+  newfile_name = 'resources/'+city+'/users_before_trimming.json'
   newfile = open(newfile_name, encoding='utf8', mode='w')
   json.dump(lines, newfile, indent=2)
   newfile.close()
@@ -294,7 +294,7 @@ def trim_users_features(file):
     users_friends[u['user_id']] = u['friends']
     
   # save users to file
-  outfile_name = 'resources/trim by review count/'+city+'/users_trimmed.json'
+  outfile_name = 'resources/'+city+'/users.json'
   outfile = open(outfile_name, encoding='utf8', mode='w')
   json.dump(trimmed_users, outfile, indent=2)
   outfile.close()
@@ -303,7 +303,7 @@ def trim_users_features(file):
   # save friendslists to file
   # note: when opening, use .split() on the items to turn to list
   #       lists ocupy more space than simple strings
-  friendsfile_name = 'resources/trim by review count/'+city+'/users_friends.json'
+  friendsfile_name = 'resources/'+city+'/users_friends.json'
   friendsfile = open(friendsfile_name, encoding='utf8', mode='w')
   json.dump(users_friends, friendsfile, indent=2)
   friendsfile.close()
@@ -338,7 +338,7 @@ def save_users_to_csv(file):
 
 
 if __name__ == '__main__':
-  '''
+  
   # SELECT BUSINESSES
   # select all businesses from Mississauga
   file = open(biz_filename, encoding='utf8', mode='r')
@@ -372,10 +372,9 @@ if __name__ == '__main__':
   reviews_csv_filename = save_reviews_to_csv(file)
   file.close()
   print('saved to csv')
-  '''
+  
   # SELECT USERS
   # get reviews ids
-  reviews_csv_filename = 'resources/trim by review count/Toronto/reviews_trimmed.csv'
   users_dict = getReviewsUserIDs(reviews_csv_filename)
   print('found ' + str(len(users_dict)) + ' unique users')
   # get users by reviews
@@ -392,3 +391,4 @@ if __name__ == '__main__':
   users_csv_filename = save_users_to_csv(file)
   file.close()
   print('saved to csv')
+  
