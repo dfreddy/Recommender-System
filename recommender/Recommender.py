@@ -159,17 +159,19 @@ def test_model(model_id):
                 r_aj = user_rated_items[j]
                 rj = Utils.getItemData(j, city_items_df)['rating']
 
+                # former calc
                 #weighted_sum += sim_ji * ((r_aj - rj[j] + 4) / 2) * ri
+                
                 weighted_sum += sim_ji * (r_aj - rj)
                 weighted_bottom += sim_ji
 
+                # testing
                 #if i == 2446:
                 #    print(f'sim_ji for {j}: {sim_ji}')
 
-            if weighted_bottom != 0:
-                predicted_value = ra + (weighted_sum/weighted_bottom)
-                errors.append(np.power(predicted_value - user_rated_items[i], 2))
-                deviations.append(100 * (predicted_value - user_rated_items[i]) / user_rated_items[i])
+            predicted_value = ra + (weighted_sum/weighted_bottom)
+            errors.append(np.power(predicted_value - user_rated_items[i], 2))
+            deviations.append(100 * (predicted_value - user_rated_items[i]) / user_rated_items[i])
 
         counter += 1
         new_percentage = int(counter/total_users*100)
