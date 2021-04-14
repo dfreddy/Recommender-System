@@ -33,6 +33,8 @@ class PredictionSVD(object):
       self.model_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
   def get(self, x, y):
+    x = int(x)
+    y = int(y)
     return np.float32(self.bias + self.bias_u[x] + self.bias_v[y] + np.sum(np.multiply(self.u[x], self.vt[y])))
 
   def save(self):

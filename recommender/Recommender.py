@@ -34,14 +34,15 @@ def get_recommendation(user_id, model_id):
     # final ratings are stored as { "item_id": final_rating, ... }
     final_ratings_dict = {}
 
-    user_rated_items_ids = Utils.getUserRatingsForCity(user_id, CITY).keys()
+    user_rated_items = Utils.getUserRatingsForCity(user_id, CITY)
+    user_rated_items_ids = user_rated_items.keys()
     nr_user_rated_items = len(user_rated_items_ids)
     ra = Utils.getUserData(user_id)['average']
     sim_model = load_model(model_id)
     
     # load city items
     city_items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
-    total_items = city_items_df.size
+    total_items = len(city_items_df)
     rj = {}
     for j in user_rated_items_ids:
         rj[j] = Utils.getItemData(j, city_items_df)['rating']
@@ -56,6 +57,7 @@ def get_recommendation(user_id, model_id):
 
         # skip item if already rated by user
         if i in user_rated_items_ids:
+            counter += 1
             continue
 
         weighted_sum, weighted_bottom = 0, 0
@@ -196,10 +198,11 @@ if __name__ == '__main__':
 
     #get_recommendation('no2KpuffhnfD9PIDdlRM9g', '20210331011104')
     #get_recommendation('iX1IIVWt5__u7ykkczLsRA', '20210331033705')
-    #get_recommendation('GlxJs5r01_yqIgb4CYtiog', '20210331033705')
-    rmse, md = test_model(MODEL)
-    print(f'rmse = {rmse}')
-    print(f'mean deviation % = {md}')
+    get_recommendation('GlxJs5r01_yqIgb4CYtiog', '20210406155019')
+    
+    #rmse, md = test_model(MODEL)
+    #print(f'rmse = {rmse}')
+    #print(f'mean deviation % = {md}')
     
     '''
     model = load_model('20210402181019')
