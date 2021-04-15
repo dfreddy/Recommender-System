@@ -34,10 +34,6 @@ def cosine_similarity():
       Create item-item similarity matrix as a list:
         { item_a,item_b: similarity, ... }
       Save to .csv for posterity
-
-      Note:
-        It becomes necessary to save entries for item_a,item_b and for item_b,item_a
-        in order to later calculate the latent values
   '''
 
   file = open('../yelp_dataset/resources/'+city+'/user_ratings_by_item.json', encoding='utf8', mode='r')
@@ -65,6 +61,8 @@ def cosine_similarity():
         # their ratings by user
         item_a_vector = ratings_by_item[item_a]
         item_b_vector = ratings_by_item[item_b]
+        len_item_a_vector = len(item_a_vector)
+        len_item_b_vector = len(item_b_vector)
         common_users = set(item_a_vector.keys()).intersection(set(item_b_vector.keys()))
 
         len_common_users = len(common_users)
@@ -78,18 +76,22 @@ def cosine_similarity():
 
           similarity = dot_product / (sum(item_a_vector.values()) * sum(item_b_vector.values()))
 
-          similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity
-          similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity
+          similarity_ab = similarity * (len_common_users/len_item_a_vector) * ((2*len_common_users) / (len_item_a_vector+len_item_b_vector))
+          similarity_ba = similarity * (len_common_users/len_item_b_vector) * ((2*len_common_users) / (len_item_a_vector+len_item_b_vector))
+          
+          similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity_ab
+          similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity_ba
 
           #print('Cosine similarity(a,b;b,a) = ' + str(format(similarity, '.4f')))
 
     counter += 1
     new_percentage = int(counter/total_items*100)
     if new_percentage > percentage:
-      end = time.perf_counter()
-      percentage = new_percentage
-      t = (end-start)/60
-      print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 'm ... ' + str(format(100*t/new_percentage, '.2f')) + 'm')
+      if new_percentage % 5 == 0:
+        end = time.perf_counter()
+        percentage = new_percentage
+        t = (end-start)/60
+        print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 'm ... ' + str(format(100*t/new_percentage, '.2f')) + 'm')
 
   save_to_csv('cosine_similarity', similarity_matrix)
 
@@ -168,6 +170,6 @@ def AMSD_similarity():
 
 
 if __name__ == '__main__':
-  # cosine_similarity()
-  AMSD_similarity()
+  cosine_similarity()
+  #AMSD_similarity()
   

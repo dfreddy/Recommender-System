@@ -72,7 +72,7 @@ def get_influence(user_ratings, items_list, item_id, model, ra, items_df, origin
     predicted_score = 0
     weighted_sum, weighted_bottom = 0, 0
     for j in items_list:
-        sim_ji = model.get(j,item_id)
+        sim_ji = model.get(j,item_id) * 10
         if sim_ji <= 0:
             sim_ji = 0.000001
 
@@ -93,4 +93,4 @@ def get_influence(user_ratings, items_list, item_id, model, ra, items_df, origin
 
 # For Testing Purposes
 if __name__ == '__main__':
-    get_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '1410', 3.3910595250478908)
+    get_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '2832', 3.460729385832826)

@@ -1,10 +1,11 @@
 import Utils, SVD_Inference, Matrix, operator, time, math
 import numpy as np
 import pandas as pd
+from collections import Counter
 
 
 CITY = 'Toronto'
-MODEL = '20210406155019'
+MODEL = '20210415174723'
 
 def train_model():
     item_similarity_matrix = SVD_Inference.get_similarity_matrix()
@@ -16,6 +17,37 @@ def load_model(model_id):
     model.load(model_id)
 
     return model
+
+
+def print_test_loading(new_percentage, start, errors, deviations, sort_devs):
+    end = time.perf_counter()
+    t = (end-start)/60
+    rmse = format(np.sqrt(np.mean(errors)), '.3f')
+    md = format(np.mean(deviations), '.1f')
+    std = format(np.std(deviations), '.1f')
+    print("{}\t\t{}\t\t{}\t{}\t{}".format(str(new_percentage) + '%', str(format(t, '.1f')) + 'm', rmse, md, np.mean(sort_devs)))
+
+
+def get_sorted_dict_indexes(unsorted_dict):
+    sorted_dict = sorted(unsorted_dict.items(), key=operator.itemgetter(1), reverse=False)
+    sorted_with_indexes = {}
+    index, c = 1, 0
+    while c < len(sorted_dict):
+        if c == 0:
+            sorted_with_indexes[sorted_dict[c][0]] = index
+            index += 1
+            c += 1
+            continue
+
+        if sorted_dict[c][1] > sorted_dict[c-1][1]:
+            sorted_with_indexes[sorted_dict[c][0]] = index
+        else:
+            sorted_with_indexes[sorted_dict[c][0]] = sorted_with_indexes[sorted_dict[c-1][0]]
+        
+        index += 1
+        c += 1
+    
+    return sorted_with_indexes
 
 
 def get_recommendation(user_id, model_id):
@@ -118,37 +150,52 @@ def test_model(model_id):
     # deviations are the percentage of deviation from the predicted value (not absolute values)
     errors = []
     deviations = []
+    sort_devs = []
     sim_model = load_model(model_id)
     
     # load city items
     city_items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
 
     # load a random % of users
-    users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
-    users_df = users_df.sample(frac=1).reset_index(drop=True)
+    users_df_non_shuffled = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
+    users_df = users_df_non_shuffled.sample(frac=1).reset_index(drop=True)
     rows = len(users_df)
     users_df = users_df.iloc[np.random.permutation(rows)].reset_index(drop=True)
-    split_index = int(rows * 0.02)
+    split_index = int(rows * 0.01)
     users_df = users_df[0:split_index]
     total_users = len(users_df)
 
     # iterate users
     start = time.perf_counter()
     counter, percentage = 0, 0
-    print("{}\t{}\t{}\t{}".format("progress", "total time", "RMSE", "MD"))
+    print("{}\t{}\t{}\t{}\t{}".format("progress", "total time", "RMSE", "MD", "SORT DEV"))
     for index, row in users_df.iterrows():
         # get user data
         user_id = row['user']
         user_rated_items = Utils.getUserRatingsForCity(user_id, CITY)
         user_rated_items_ids = user_rated_items.keys()
         nr_user_rated_items = len(user_rated_items_ids)
-        if nr_user_rated_items < 5:
+        if nr_user_rated_items < 10:
             counter += 1
+            new_percentage = int(counter/total_users*100)
+            if new_percentage > percentage:
+                if new_percentage % 5 == 0:
+                    percentage = new_percentage
+                    print_test_loading(new_percentage, start, errors, deviations, sort_devs)
             continue
 
         ra = Utils.getUserData(user_id, users_df)['average']
         
+        # sort ratings
+        sorted_ratings = get_sorted_dict_indexes(user_rated_items)
+        # make equal ratings be arrays
+        index_counter = Counter(sorted_ratings.values())
+        for item in sorted_ratings:
+            if index_counter[sorted_ratings[item]] > 1:
+                sorted_ratings[item] = [sorted_ratings[item], sorted_ratings[item] + index_counter[sorted_ratings[item]] - 1]
+
         # find the predicted user rating for every item they've already rated
+        sorted_predicted_values = {}
         for i in user_rated_items_ids:
 
             weighted_sum, weighted_bottom = 0, 0
@@ -174,35 +221,45 @@ def test_model(model_id):
             predicted_value = ra + (weighted_sum/weighted_bottom)
             errors.append(np.power(predicted_value - user_rated_items[i], 2))
             deviations.append(100 * (predicted_value - user_rated_items[i]) / user_rated_items[i])
+            sorted_predicted_values[i] = predicted_value
+
+        # find sorting deviation %
+        sorted_predicted_ratings = get_sorted_dict_indexes(sorted_predicted_values)
+        sort_dev = 0
+        for i in sorted_predicted_ratings:
+            if isinstance(sorted_ratings[i], int):
+                sort_dev += 100 * abs(sorted_ratings[i] - sorted_predicted_ratings[i]) / (nr_user_rated_items - 1)
+                continue
+            if sorted_predicted_ratings[i] < sorted_ratings[i][0] or sorted_predicted_ratings[i] > sorted_ratings[i][1]:
+                sort_dev += 100 * abs(sorted_predicted_ratings[i] - np.mean(sorted_ratings[i])) / (nr_user_rated_items - 1)
+                continue
+        sort_dev = sort_dev / nr_user_rated_items
+        sort_devs.append(sort_dev)
 
         counter += 1
         new_percentage = int(counter/total_users*100)
         if new_percentage > percentage:
             if new_percentage % 5 == 0:
-                end = time.perf_counter()
                 percentage = new_percentage
-                t = (end-start)/60
-                rmse = format(np.sqrt(np.mean(errors)), '.3f')
-                md = format(np.mean(deviations), '.1f')
-                print("{}\t\t{}\t\t{}\t{}".format(str(new_percentage) + '%', str(format(t, '.1f')) + 'm', rmse, md))
-
+                print_test_loading(new_percentage, start, errors, deviations, sort_devs)
+                
     rmse = np.sqrt(np.mean(errors))
     md = np.mean(deviations)
+    std = np.std(deviations)
 
-    return rmse, md
+    return rmse, md, std
 
 
 # For Testing Purposes
 if __name__ == '__main__':
     #train_model()
 
-    #get_recommendation('no2KpuffhnfD9PIDdlRM9g', '20210331011104')
-    #get_recommendation('iX1IIVWt5__u7ykkczLsRA', '20210331033705')
-    get_recommendation('GlxJs5r01_yqIgb4CYtiog', '20210406155019')
+    #get_recommendation('GlxJs5r01_yqIgb4CYtiog', MODEL)
     
-    #rmse, md = test_model(MODEL)
-    #print(f'rmse = {rmse}')
-    #print(f'mean deviation % = {md}')
+    rmse, md, std = test_model(MODEL)
+    print(f'rmse = {rmse}')
+    print(f'mean of deviation % = {md}')
+    print(f'deviation of deviation % = {std}')
     
     '''
     model = load_model('20210402181019')
@@ -236,15 +293,3 @@ if __name__ == '__main__':
     '''    
 
     pass
-
-'''
-    TODO
-
-    learn similarity between 304 and 2446
-    both are bars
-    the similarity is very low
-
-    learn similarity between 304 and 1033
-    one is a bar while the other is a sports shop
-    the similarity is very high
-'''
