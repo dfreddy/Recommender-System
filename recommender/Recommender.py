@@ -5,7 +5,7 @@ from collections import Counter
 
 
 CITY = 'Toronto'
-MODEL = '20210415174723'
+MODEL = '20210420185504'
 
 def train_model():
     item_similarity_matrix = SVD_Inference.get_similarity_matrix()
@@ -127,9 +127,13 @@ def get_recommendation(user_id, model_id):
     i, k = 0, 5
     print(f'top {k} items')
     while i < k:
-        print(sorted_final_ratings[i])
-        print(Utils.getItemData(sorted_final_ratings[i][0]))
-        i += 1
+        if Utils.getItemData(sorted_final_ratings[i][0])['rating'] > 3.0:
+            print(sorted_final_ratings[i])
+            print(Utils.getItemData(sorted_final_ratings[i][0]))
+            i += 1
+        else:
+            i += 1
+            k += 1
 
 
 def test_model(model_id):
@@ -254,13 +258,14 @@ def test_model(model_id):
 if __name__ == '__main__':
     #train_model()
 
-    #get_recommendation('GlxJs5r01_yqIgb4CYtiog', MODEL)
+    get_recommendation('GlxJs5r01_yqIgb4CYtiog', MODEL)
     
+    '''
     rmse, md, std = test_model(MODEL)
     print(f'rmse = {rmse}')
     print(f'mean of deviation % = {md}')
     print(f'deviation of deviation % = {std}')
-    
+    '''
     '''
     model = load_model('20210402181019')
 

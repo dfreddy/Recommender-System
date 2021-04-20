@@ -4,7 +4,7 @@ import pandas as pd
 
 
 CITY = 'Toronto'
-MODEL = '20210406155019'
+MODEL = '20210420185504'
 
 def get_explanation(model_id, user_id, item_id, original_score):
     '''
@@ -39,30 +39,37 @@ def get_explanation(model_id, user_id, item_id, original_score):
         items_list_except_j = Utils.list_except(user_rated_items_ids, j)
         item_influence[j] = get_influence(user_ratings, items_list_except_j, item_id, model, ra, items_df, original_score)
 
-    '''
     # get category influences
     cat_influence = {}
     for cat in user_rated_categories.keys():
         if len(user_rated_categories[cat]) > 1:
             items_list_except_cat = Utils.list_except(user_rated_items_ids, user_rated_categories[cat])
             cat_influence[cat] = get_influence(user_ratings, items_list_except_cat, item_id, model, ra, items_df, original_score)
-    '''
 
-
-    # sort dict
+    # sort item dict
     sorted_items_influence = sorted(item_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
     print(Utils.getItemData(item_id))
     print(f'top {k} items influencers')
     while i < k:
-        print(f'{sorted_items_influence[i]} {user_ratings[sorted_items_influence[i][0]]}')
+        print(f'{sorted_items_influence[i]} {user_ratings[sorted_items_influence[i][0]]} {model.get(sorted_items_influence[i][0],item_id)}')
         print(Utils.getItemData(sorted_items_influence[i][0]))
+        i += 1
+        
+    # sort cat dict
+    sorted_cat_influence = sorted(cat_influence.items(), key=operator.itemgetter(1), reverse=True)
+    i, k = 0, 10
+    print(Utils.getItemData(item_id))
+    print(f'top {k} cat influencers')
+    while i < k:
+        print(f'{sorted_cat_influence[i]}')
         i += 1
 
 
 def get_influence(user_ratings, items_list, item_id, model, ra, items_df, original_score):
     '''
-        Minimalist user recommender prediction for just one item
+        Minimalist user recommender prediction algorithm for just one item
+        Returns the % influence in the recommendation
 
         user_ratings = dict of user rated items and their given rating
         items_list   = list of user rated items' ids
@@ -72,15 +79,10 @@ def get_influence(user_ratings, items_list, item_id, model, ra, items_df, origin
     predicted_score = 0
     weighted_sum, weighted_bottom = 0, 0
     for j in items_list:
-        sim_ji = model.get(j,item_id) * 10
+        sim_ji = model.get(j,item_id)
         if sim_ji <= 0:
             sim_ji = 0.000001
 
-        # TODO
-        # give more relevance to the similarity values
-        # maybe sim = sim*10 ?
-        # since the dataset is so sparse, the similarity values tend to be very low
-        # maybe restructure the similarity calc to better respond to this sparsity
         r_aj = user_ratings[j]
         rj = Utils.getItemData(j, items_df)['rating']
         weighted_sum += sim_ji * (r_aj - rj)
@@ -88,9 +90,9 @@ def get_influence(user_ratings, items_list, item_id, model, ra, items_df, origin
 
     predicted_score = ra + (weighted_sum/weighted_bottom)
 
-    return original_score - predicted_score
+    return 100*(original_score - predicted_score) / original_score
 
 
 # For Testing Purposes
 if __name__ == '__main__':
-    get_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '2832', 3.460729385832826)
+    get_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '102', 3.428578365286457)

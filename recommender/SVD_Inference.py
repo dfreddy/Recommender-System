@@ -13,12 +13,10 @@ from collections import deque
 
 np.random.seed(13575)
 
-#BATCH_SIZE = 100
 BATCH_SIZE = 800
-#ITEM_NUM = 3518 # nr of items in the dataset
 ITEM_NUM = 2846 # nr of items in the dataset
-DIM = 15 # nr of latent features we want
-EPOCH_MAX = 10
+DIM = 25 # nr of latent features we want
+EPOCH_MAX = 100
 DEVICE = "/cpu:0"
 
 
@@ -87,7 +85,7 @@ def optimization_function(inference, regularizer, similarity_batch, learning_rat
     l2_loss_function = tf.nn.l2_loss(tf.subtract(inference, similarity_batch))
     l2_norm = tf.constant(reg, dtype=tf.float32, shape=[], name='l2')
     cost = tf.add(l2_loss_function, tf.multiply(regularizer, l2_norm))
-    #zeroes_penalty = tf.reduce_sum(tf.subtract(tf.abs(inference), inference))
+    zeroes_penalty = tf.reduce_sum(tf.subtract(tf.abs(inference), inference))
     #cost = tf.add(cost, zeroes_penalty)
 
     # Optimization done thru derivative calculation using Tensorflow's Adam Optimizer
