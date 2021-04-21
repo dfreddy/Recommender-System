@@ -66,7 +66,7 @@ def get_recommendation(user_id, model_id):
     # final ratings are stored as { "item_id": final_rating, ... }
     final_ratings_dict = {}
 
-    user_rated_items = Utils.getUserRatingsForCity(user_id, CITY)
+    user_rated_items = Utils.getUserRatingsForCity(user_id)
     user_rated_items_ids = user_rated_items.keys()
     nr_user_rated_items = len(user_rated_items_ids)
     ra = Utils.getUserData(user_id)['average']
@@ -157,8 +157,9 @@ def test_model(model_id):
     sort_devs = []
     sim_model = load_model(model_id)
     
-    # load city items
+    # load city items and reviews
     city_items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/reviews.csv')
 
     # load a random % of users
     users_df_non_shuffled = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
@@ -176,7 +177,7 @@ def test_model(model_id):
     for index, row in users_df.iterrows():
         # get user data
         user_id = row['user']
-        user_rated_items = Utils.getUserRatingsForCity(user_id, CITY)
+        user_rated_items = Utils.getUserRatingsForCity(user_id, reviews_df)
         user_rated_items_ids = user_rated_items.keys()
         nr_user_rated_items = len(user_rated_items_ids)
         if nr_user_rated_items < 10:

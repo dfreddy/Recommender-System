@@ -80,13 +80,15 @@ def saveAllRatingsForAllItems(city):
   print('finished')
 
 
-def getUserRatingsForCity(user_id, city):
+def getUserRatingsForCity(user_id, reviews_df=None):
   '''
       Returns all the items rated by the user in the format:
-        { "item_id": rating }
+        { "item_id": rating, ... }
   '''
 
-  reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/reviews.csv')
+  if reviews_df is None:
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/reviews.csv')
+  
   df = reviews_df[reviews_df.user.isin([user_id])]
   ret = {}
 
@@ -97,13 +99,15 @@ def getUserRatingsForCity(user_id, city):
   return ret
 
 
-def getAllUserRatings(user_id, df=None):
+def getAllUserRatings(user_id, reviews_df=None):
   '''
       Returns all the items rated by the user in the format:
-        { "item_id": rating }
+        { "item_id": rating, ... }
   '''
 
-  reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/users_all_reviews.csv')
+  if reviews_df is None:
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/users_all_reviews.csv')
+    
   df = reviews_df[reviews_df.user.isin([user_id])]
   ret = {}
 
@@ -208,7 +212,7 @@ if __name__ == '__main__':
   #print(getUserData('dIIKEfOgo0KqUfGQvGikPg'))
   #print(getItemData('0'))
   
-  #items = getUserRatingsForCity('no2KpuffhnfD9PIDdlRM9g', 'Mississauga')
+  #items = getUserRatingsForCity('no2KpuffhnfD9PIDdlRM9g')
   #for k in items:
   #  print(getItemData(k))
   #  print(f'received a rating: {items[k]}')

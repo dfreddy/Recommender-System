@@ -14,13 +14,13 @@ def get_explanation(model_id, user_id, item_id, original_score):
     # load similarity model
     model = Recommender.load_model(model_id)
     # load user data
-    user_ratings = Utils.getUserRatingsForCity(user_id, CITY)
+    user_ratings = Utils.getUserRatingsForCity(user_id)
     user_rated_items_ids = user_ratings.keys()
     nr_user_rated_items = len(user_rated_items_ids)
     users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
     ra = Utils.getUserData(user_id, users_df)['average']
 
-    # get rated item influences
+    # ITEM INFLUENCE
     items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
     user_rated_categories = {} # {'category_1': [item_id_1, item_id_2, ...]}
     item_influence = {}
@@ -39,14 +39,28 @@ def get_explanation(model_id, user_id, item_id, original_score):
         items_list_except_j = Utils.list_except(user_rated_items_ids, j)
         item_influence[j] = get_influence(user_ratings, items_list_except_j, item_id, model, ra, items_df, original_score)
 
-    # get category influences
+    # CATEGORY INFLUENCE
     cat_influence = {}
     for cat in user_rated_categories.keys():
         if len(user_rated_categories[cat]) > 1:
             items_list_except_cat = Utils.list_except(user_rated_items_ids, user_rated_categories[cat])
             cat_influence[cat] = get_influence(user_ratings, items_list_except_cat, item_id, model, ra, items_df, original_score)
 
-    # sort item dict
+    # FRIENDS INFLUENCE
+    # TODO
+    # retrieve all user k friends
+    # calculate similarity between them
+    # calculate Ru' with only the friends
+
+    # ELITE INFLUENCE
+    # TODO
+    # retrieve top k elite users
+    # calculate similarities
+    # calculate Ru' with only the elite users
+    # compare values
+
+
+    # SORT item influence dict
     sorted_items_influence = sorted(item_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
     print(Utils.getItemData(item_id))
@@ -56,7 +70,7 @@ def get_explanation(model_id, user_id, item_id, original_score):
         print(Utils.getItemData(sorted_items_influence[i][0]))
         i += 1
         
-    # sort cat dict
+    # SORT cat influence dict
     sorted_cat_influence = sorted(cat_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 10
     print(Utils.getItemData(item_id))

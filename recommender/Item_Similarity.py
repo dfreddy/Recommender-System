@@ -63,21 +63,21 @@ def cosine_similarity():
         item_b_vector = ratings_by_item[item_b]
         len_item_a_vector = len(item_a_vector)
         len_item_b_vector = len(item_b_vector)
-        common_users = set(item_a_vector.keys()).intersection(set(item_b_vector.keys()))
+        mutual_users = set(item_a_vector.keys()).intersection(set(item_b_vector.keys()))
 
-        len_common_users = len(common_users)
+        len_mutual_users = len(mutual_users)
 
         # calculate similarity if they have common users
-        if (len_common_users > 0):
+        if (len_mutual_users > 0):
           dot_product = 0
 
-          for user in common_users:
+          for user in mutual_users:
             dot_product += item_a_vector[user] * item_b_vector[user]
 
           similarity = dot_product / (sum(item_a_vector.values()) * sum(item_b_vector.values()))
 
-          similarity_ab = similarity * (len_common_users/len_item_a_vector) * ((2*len_common_users) / (len_item_a_vector+len_item_b_vector))
-          similarity_ba = similarity * (len_common_users/len_item_b_vector) * ((2*len_common_users) / (len_item_a_vector+len_item_b_vector))
+          similarity_ab = similarity * (len_mutual_users/len_item_a_vector) * ((2*len_mutual_users) / (len_item_a_vector+len_item_b_vector))
+          similarity_ba = similarity * (len_mutual_users/len_item_b_vector) * ((2*len_mutual_users) / (len_item_a_vector+len_item_b_vector))
           
           similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity_ab
           similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity_ba
@@ -133,23 +133,23 @@ def AMSD_similarity():
         # their ratings by user
         item_a_vector = ratings_by_item[item_a]
         item_b_vector = ratings_by_item[item_b]
-        common_users = set(item_a_vector.keys()).intersection(set(item_b_vector.keys()))
+        mutual_users = set(item_a_vector.keys()).intersection(set(item_b_vector.keys()))
         
-        len_common_users = len(common_users)
+        len_mutual_users = len(mutual_users)
         len_item_a_vector = len(item_a_vector)
         len_item_b_vector = len(item_b_vector)
 
         # calculate similarity if they have common users
-        if (len_common_users > 0):
+        if (len_mutual_users > 0):
           msd, l = 0, pow(4,2)
 
-          for user in common_users:
+          for user in mutual_users:
             msd += pow(item_a_vector[user] - item_b_vector[user], 2)
-          msd = (l - (msd / len_common_users)) / l
+          msd = (l - (msd / len_mutual_users)) / l
 
           if msd > 0.0: # items where the mean difference exceeds the L Threshold are discarded
-            similarity_ab = msd * (len_common_users/len_item_a_vector) * ((2*len_common_users) / (len_item_a_vector+len_item_b_vector))
-            similarity_ba = msd * (len_common_users/len_item_b_vector) * ((2*len_common_users) / (len_item_a_vector+len_item_b_vector))
+            similarity_ab = msd * (len_mutual_users/len_item_a_vector) * ((2*len_mutual_users) / (len_item_a_vector+len_item_b_vector))
+            similarity_ba = msd * (len_mutual_users/len_item_b_vector) * ((2*len_mutual_users) / (len_item_a_vector+len_item_b_vector))
           
             similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity_ab
             similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity_ba
