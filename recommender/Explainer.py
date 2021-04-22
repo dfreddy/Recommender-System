@@ -1,4 +1,4 @@
-import Utils, SVD_Inference, Recommender, Matrix, operator, time, math
+import Utils, SVD_Inference, Recommender, Matrix, User_Similarity, operator, time, math
 import numpy as np
 import pandas as pd
 
@@ -51,6 +51,12 @@ def get_explanation(model_id, user_id, item_id, original_score):
     # retrieve all user k friends
     # calculate similarity between them
     # calculate Ru' with only the friends
+    user_friends = Utils.getUserFriends(user_id)
+    k = len(user_friends)
+    friends_similarity = {}
+    for friend in user_friends:
+        friends_similarity[friend] = User_Similarity.AMSD_user_similarity(user_id, friend)
+    friends_influence = User_Similarity.get_user_based_recommendation(user_id, friends_similarity, item_id)
 
     # ELITE INFLUENCE
     # TODO
@@ -58,6 +64,11 @@ def get_explanation(model_id, user_id, item_id, original_score):
     # calculate similarities
     # calculate Ru' with only the elite users
     # compare values
+    elite_users = Utils.getTopKEliteUsers(k)
+    elites_similarity = {}
+    for elite in elite_users:
+        elites_similarity[elite] = User_Similarity.AMSD_user_similarity(user_id, elite)
+    elites_influence = User_Similarity.get_user_based_recommendation(user_id, elites_similarity, item_id)
 
 
     # SORT item influence dict

@@ -35,7 +35,7 @@ def AMSD_user_similarity(u1, u2):
     return similarity
 
 
-def get_user_based_recommendation(user_id, user_list, similarities, item_id):
+def get_user_based_recommendation(user_id, similarities, item_id):
     '''
         Modifies the item based recommendation engine to be based on user similarity
         Returns the predicted R value for a single user-item pair

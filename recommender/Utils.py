@@ -135,6 +135,35 @@ def getUserData(user_id, df=None):
   return None
 
 
+def getUserFriends(user_id):
+  '''
+      Returns the user's friends as a list
+  '''
+
+  filename = '../yelp_dataset/resources/'+city+'/users_friends.json'
+  file = open(filename, encoding='utf8', mode='r')
+  users = json.load(file)
+  friends = []
+
+  if user_id in users:
+    friends = users[user_id].replace(', ', ',').split(',')
+  
+  return friends
+
+
+def getTopKEliteUsers(k, df=None):
+  '''
+      Returns a list with the top-k users with most elite years
+  '''
+
+  if df is None:
+    df = pd.read_csv('../yelp_dataset/resources/'+city+'/users.csv')
+  
+  elite_users = df.sort_values(by='elite', ascending=False).head(k)['user'].tolist()
+
+  return elite_users
+
+
 def getItemData(biz_id, df=None):
   '''
       Returns the business's data as a dict
@@ -223,6 +252,9 @@ if __name__ == '__main__':
   #print(len(index))
   #print(df["similarity"].values[index[0]])
   
-  saveAllRatingsForAllItems('Toronto')
+  #saveAllRatingsForAllItems('Toronto')
+
+  #getUserFriends('I_6wY8_RsewziNnKhGZg4g')
+  getTopKEliteUsers(10)
 
   pass
