@@ -80,6 +80,22 @@ def saveAllRatingsForAllItems(city):
   print('finished')
 
 
+def getUserItemRating(user_id, item_id, reviews_df=None):
+  '''
+      Returns the value for the user-item pair
+  '''
+
+  if reviews_df is None:
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/reviews.csv')
+
+  df = reviews_df[(reviews_df.user==user_id) & (reviews_df.business==item_id)]
+
+  if len(df) == 0:
+    return None
+
+  return df.rating
+
+
 def getUserRatingsForCity(user_id, reviews_df=None):
   '''
       Returns all the items rated by the user in the format:
@@ -159,9 +175,11 @@ def getTopKEliteUsers(k, df=None):
   if df is None:
     df = pd.read_csv('../yelp_dataset/resources/'+city+'/users.csv')
   
-  elite_users = df.sort_values(by='elite', ascending=False).head(k)['user'].tolist()
+  # randomizes the indexes first
+  rows = len(df)
+  df = df.iloc[np.random.permutation(rows)].reset_index(drop=True)
 
-  return elite_users
+  return df.sort_values(by='elite', ascending=False).head(k)['user'].tolist()
 
 
 def getItemData(biz_id, df=None):
@@ -257,4 +275,6 @@ if __name__ == '__main__':
   #getUserFriends('I_6wY8_RsewziNnKhGZg4g')
   getTopKEliteUsers(10)
 
+  #getUserItemRating('TZQSUDDcA4ek5gBd6BzcjA','qUWqjjjfpB2-4P3He5rsKw')
+  
   pass

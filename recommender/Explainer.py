@@ -19,6 +19,7 @@ def get_explanation(model_id, user_id, item_id, original_score):
     nr_user_rated_items = len(user_rated_items_ids)
     users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
     ra = Utils.getUserData(user_id, users_df)['average']
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/reviews.csv')
 
     # ITEM INFLUENCE
     items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
@@ -38,39 +39,57 @@ def get_explanation(model_id, user_id, item_id, original_score):
         # calculate item influence
         items_list_except_j = Utils.list_except(user_rated_items_ids, j)
         item_influence[j] = get_influence(user_ratings, items_list_except_j, item_id, model, ra, items_df, original_score)
-
+    '''
     # CATEGORY INFLUENCE
     cat_influence = {}
     for cat in user_rated_categories.keys():
         if len(user_rated_categories[cat]) > 1:
             items_list_except_cat = Utils.list_except(user_rated_items_ids, user_rated_categories[cat])
             cat_influence[cat] = get_influence(user_ratings, items_list_except_cat, item_id, model, ra, items_df, original_score)
+    '''
 
+    start = time.perf_counter()
     # FRIENDS INFLUENCE
-    # TODO
-    # retrieve all user k friends
-    # calculate similarity between them
-    # calculate Ru' with only the friends
+    user_item_ratings = Utils.getAllUserRatings(user_id, reviews_df)
     user_friends = Utils.getUserFriends(user_id)
     k = len(user_friends)
+    
     friends_similarity = {}
     for friend in user_friends:
-        friends_similarity[friend] = User_Similarity.AMSD_user_similarity(user_id, friend)
-    friends_influence = User_Similarity.get_user_based_recommendation(user_id, friends_similarity, item_id)
+        friend_sim = User_Similarity.AMSD_user_similarity(user_id, friend, user_item_ratings)
+        if friend_sim is not None:
+            friends_similarity[friend] = friend_sim
+
+    stopwatch = time.perf_counter()
+    print('friends similarity -> ' + str(format(stopwatch-start, '.2f')) + 's')
+    start = stopwatch
+
+    friends_influence = User_Similarity.get_user_based_influence(user_id, friends_similarity, item_id, original_score)
+    
+    stopwatch = time.perf_counter()
+    print('friends influence -> ' + str(format(stopwatch-start, '.2f')) + 's')
+    start = stopwatch
+    print(friends_influence)
 
     # ELITE INFLUENCE
-    # TODO
-    # retrieve top k elite users
-    # calculate similarities
-    # calculate Ru' with only the elite users
-    # compare values
     elite_users = Utils.getTopKEliteUsers(k)
     elites_similarity = {}
     for elite in elite_users:
-        elites_similarity[elite] = User_Similarity.AMSD_user_similarity(user_id, elite)
-    elites_influence = User_Similarity.get_user_based_recommendation(user_id, elites_similarity, item_id)
+        elite_sim = User_Similarity.AMSD_user_similarity(user_id, elite, user_item_ratings)
+        if elite_sim is not None:
+            elites_similarity[elite] = elite_sim
 
+    stopwatch = time.perf_counter()
+    print('elites similarity -> ' + str(format(stopwatch-start, '.2f')) + 's')
+    start = stopwatch
 
+    elites_influence = User_Similarity.get_user_based_influence(user_id, elites_similarity, item_id, original_score)
+    
+    stopwatch = time.perf_counter()
+    print('elites influence -> ' + str(format(stopwatch-start, '.2f')) + 's')
+    print(elites_influence)
+
+    '''
     # SORT item influence dict
     sorted_items_influence = sorted(item_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
@@ -89,6 +108,7 @@ def get_explanation(model_id, user_id, item_id, original_score):
     while i < k:
         print(f'{sorted_cat_influence[i]}')
         i += 1
+    '''
 
 
 def get_influence(user_ratings, items_list, item_id, model, ra, items_df, original_score):
