@@ -2,8 +2,9 @@ import Utils, json, time, pprint, csv
 import pandas as pd
 import numpy as np
 
-CITY = 'Toronto'
 
+config = json.load(open('config.json', 'r'))
+CITY = config.city
 
 def AMSD_user_similarity(u1, u2, u1_item_ratings=None):
     '''

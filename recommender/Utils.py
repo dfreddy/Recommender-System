@@ -8,7 +8,8 @@ from sklearn.linear_model import LinearRegression
 
 
 # FUNCTIONS OVER THE CSV DATASETS
-city = 'Toronto'
+config = json.load(open('config.json', 'r'))
+CITY = config.city
 
 def getAllRatingsForItem(item, reviews_df=None):
   '''
@@ -185,6 +186,7 @@ def getTopKEliteUsers(k, df=None):
 def getItemData(biz_id, df=None):
   '''
       Returns the business's data as a dict
+      
       Input is the numeric city id, not the alphanumeric general id; either in string or int format
   '''
 

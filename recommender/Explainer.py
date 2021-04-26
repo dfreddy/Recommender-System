@@ -3,10 +3,11 @@ import numpy as np
 import pandas as pd
 
 
-CITY = 'Toronto'
-MODEL = '20210420185504'
+config = json.load(open('config.json', 'r'))
+CITY = config.city
+MODEL = config.model
 
-def get_explanation(model_id, user_id, item_id, original_score):
+def get_full_explanation(model_id, user_id, item_id, original_score):
     '''
         Returns the biggest influence in the recommendation (item, category, user's friends or elite users)
     '''
@@ -119,6 +120,36 @@ def get_influence(user_ratings, items_list, item_id, model, ra, items_df, origin
     return 100*(original_score - predicted_score) / original_score
 
 
+def get_recommendation_from_item(model, user_id, item_id):
+    '''
+        Returns the list of items most recommended, based on a user's preference for an item
+    '''
+
+    R_ai = Recommender.get_recommendation(user_id, model)
+    
+    user_ratings = Utils.getUserRatingsForCity(user_id)
+    user_rated_items_ids = user_ratings.keys()
+    items_list_except_j = Utils.list_except(user_rated_items_ids, item_id)
+    R_j_ai = Recommender.get_recommendation(user_id, model, items_list_except_j)
+    
+    scores = {}
+    for item in R_ai:
+        scores[item] = R_ai[item] * (R_ai[item] - R_j_ai[item])
+
+    # prints results
+    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
+    i, k = 0, 5
+    item_datat = Utils.getItemData(item_id)
+    print(f'since you liked {item_data.name}({item_data.categories}), we recommend:')
+    while i < k:
+        print(sorted_final_ratings[i])
+        print(Utils.getItemData(sorted_scores[i][0]))
+        i += 1
+    
+    return sorted_scores
+
+
 # For Testing Purposes
 if __name__ == '__main__':
-    get_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '102', 3.428578365286457)
+    #get_full_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '102', 3.428578365286457)
+    get_recommendation_from_item(MODEL, 'GlxJs5r01_yqIgb4CYtiog', 'item_id')

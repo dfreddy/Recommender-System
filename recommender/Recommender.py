@@ -4,8 +4,9 @@ import pandas as pd
 from collections import Counter
 
 
-CITY = 'Toronto'
-MODEL = '20210420185504'
+config = json.load(open('config.json', 'r'))
+CITY = config.city
+MODEL = config.model
 
 def train_model():
     item_similarity_matrix = SVD_Inference.get_similarity_matrix()
@@ -50,13 +51,15 @@ def get_sorted_dict_indexes(unsorted_dict):
     return sorted_with_indexes
 
 
-def get_recommendation(user_id, model_id):
+def get_recommendation(user_id, model_id, user_rated_items_ids=None):
     '''
-        Input: user's id
-        Output: recommended item's id
+        Input:  user's id; user_rated_items_ids allows for filtering certain items from the user's rated pool
 
-        R^(a,i) = ra + (E_j sim(j,i) * (r(a,j) - rj))
-        where,
+        Output: dict of item ids and their recommendation score; sorted list of (item, R)
+
+        Formula:
+                R^(a,i) = ra + (E_j sim(j,i) * (r(a,j) - rj))
+            where,
             ra       = average ratings of user a
             rj       = average rating of item j
             r(a,j)   = rating user a gave to item j
@@ -67,7 +70,8 @@ def get_recommendation(user_id, model_id):
     final_ratings_dict = {}
 
     user_rated_items = Utils.getUserRatingsForCity(user_id)
-    user_rated_items_ids = user_rated_items.keys()
+    if user_rated_items_ids is None:
+        user_rated_items_ids = user_rated_items.keys()
     nr_user_rated_items = len(user_rated_items_ids)
     ra = Utils.getUserData(user_id)['average']
     sim_model = load_model(model_id)
@@ -123,6 +127,7 @@ def get_recommendation(user_id, model_id):
                 print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 's')
 
     # get top-k items for user
+    '''
     sorted_final_ratings = sorted(final_ratings_dict.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
     print(f'top {k} items')
@@ -134,6 +139,9 @@ def get_recommendation(user_id, model_id):
         else:
             i += 1
             k += 1
+    '''
+
+    return final_ratings_dict
 
 
 def test_model(model_id):
