@@ -8,8 +8,8 @@ from sklearn.linear_model import LinearRegression
 
 
 # FUNCTIONS OVER THE CSV DATASETS
-config = json.load(open('config.json', 'r'))
-CITY = config.city
+config = json.load(open('./config.json', 'r'))
+CITY = config['city']
 
 def getAllRatingsForItem(item, reviews_df=None):
   '''
@@ -20,7 +20,7 @@ def getAllRatingsForItem(item, reviews_df=None):
   ratings = {}
 
   if reviews_df is None:
-    reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/reviews.csv')
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/reviews.csv')
 
   ratings_df = reviews_df[reviews_df['business'].str.contains(item)]
   for index, row in ratings_df.iterrows():
@@ -87,7 +87,7 @@ def getUserItemRating(user_id, item_id, reviews_df=None):
   '''
 
   if reviews_df is None:
-    reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/reviews.csv')
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/reviews.csv')
 
   df = reviews_df[(reviews_df.user==user_id) & (reviews_df.business==item_id)]
 
@@ -104,13 +104,13 @@ def getUserRatingsForCity(user_id, reviews_df=None):
   '''
 
   if reviews_df is None:
-    reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/reviews.csv')
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/reviews.csv')
   
   df = reviews_df[reviews_df.user.isin([user_id])]
   ret = {}
 
   for index, row in df.iterrows():
-    item_id = getItemIdByBusiness(row['business'], city_name=city)
+    item_id = getItemIdByBusiness(row['business'], city_name=CITY)
     ret[item_id] = row['rating']
 
   return ret
@@ -123,7 +123,7 @@ def getAllUserRatings(user_id, reviews_df=None):
   '''
 
   if reviews_df is None:
-    reviews_df = pd.read_csv('../yelp_dataset/resources/'+city+'/users_all_reviews.csv')
+    reviews_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users_all_reviews.csv')
     
   df = reviews_df[reviews_df.user.isin([user_id])]
   ret = {}
@@ -141,7 +141,7 @@ def getUserData(user_id, df=None):
   '''
 
   if df is None:
-    df = pd.read_csv('../yelp_dataset/resources/'+city+'/users.csv')
+    df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
   
   df = df[df.user.isin([user_id])]
 
@@ -157,7 +157,7 @@ def getUserFriends(user_id):
       Returns the user's friends as a list
   '''
 
-  filename = '../yelp_dataset/resources/'+city+'/users_friends.json'
+  filename = '../yelp_dataset/resources/'+CITY+'/users_friends.json'
   file = open(filename, encoding='utf8', mode='r')
   users = json.load(file)
   friends = []
@@ -174,7 +174,7 @@ def getTopKEliteUsers(k, df=None):
   '''
 
   if df is None:
-    df = pd.read_csv('../yelp_dataset/resources/'+city+'/users.csv')
+    df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
   
   # randomizes the indexes first
   rows = len(df)
@@ -191,7 +191,7 @@ def getItemData(biz_id, df=None):
   '''
 
   if df is None:
-    df = pd.read_csv('../yelp_dataset/resources/'+city+'/businesses.csv')
+    df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
   
   df = df[df.id.isin([int(biz_id)])]
 
@@ -208,7 +208,7 @@ def getItemIdByBusiness(biz, business_df=None, city_name=None):
   '''
 
   if city_name is None:
-    city_name = city
+    city_name = CITY
 
   if business_df is None:
     business_df = pd.read_csv('../yelp_dataset/resources/'+city_name+'/businesses.csv')

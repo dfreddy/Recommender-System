@@ -1,11 +1,28 @@
-import Utils, SVD_Inference, Recommender, Matrix, User_Similarity, operator, time, math
+import Utils, SVD_Inference, Recommender, Matrix, User_Similarity, operator, time, math, random, json
 import numpy as np
 import pandas as pd
 
 
-config = json.load(open('config.json', 'r'))
-CITY = config.city
-MODEL = config.model
+config = json.load(open('./config.json', 'r'))
+CITY = config['city']
+MODEL = config['model']
+
+def select_random_user_liked_item(user_id):
+    '''
+        Finds a random item which the user has rated above its average
+    '''
+
+    user_ratings = Utils.getUserRatingsForCity(user_id)
+    user_avg = Utils.getUserData(user_id)['average']
+    items_list, weights = [], []
+
+    for item in user_ratings:
+        if user_ratings[item] >= user_avg:
+            items_list.append(item)
+            weights.append(user_ratings[item])
+    
+    return random.choices(items_list, weights)[0]
+
 
 def get_full_explanation(model_id, user_id, item_id, original_score):
     '''
@@ -151,5 +168,9 @@ def get_recommendation_from_item(model, user_id, item_id):
 
 # For Testing Purposes
 if __name__ == '__main__':
-    #get_full_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '102', 3.428578365286457)
-    get_recommendation_from_item(MODEL, 'GlxJs5r01_yqIgb4CYtiog', 'item_id')
+    user_id = 'GlxJs5r01_yqIgb4CYtiog'
+
+    #get_full_explanation(MODEL, user_id, '102', 3.428578365286457)
+    
+    item_id = select_random_user_liked_item(user_id)
+    get_recommendation_from_item(MODEL, user_id, 'item_id')

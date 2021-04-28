@@ -4,7 +4,7 @@ import numpy as np
 
 
 config = json.load(open('config.json', 'r'))
-CITY = config.city
+CITY = config['city']
 
 def AMSD_user_similarity(u1, u2, u1_item_ratings=None):
     '''

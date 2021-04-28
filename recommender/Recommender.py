@@ -1,12 +1,12 @@
-import Utils, SVD_Inference, Matrix, operator, time, math
+import Utils, SVD_Inference, Matrix, operator, time, math, json
 import numpy as np
 import pandas as pd
 from collections import Counter
 
 
 config = json.load(open('config.json', 'r'))
-CITY = config.city
-MODEL = config.model
+CITY = config['city']
+MODEL = config['model']
 
 def train_model():
     item_similarity_matrix = SVD_Inference.get_similarity_matrix()
