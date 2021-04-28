@@ -222,6 +222,16 @@ def getItemIdByBusiness(biz, business_df=None, city_name=None):
   return business_df["id"].values[index[0]]
 
 
+def getAllItems():
+  '''
+      Returns a dict of all items' data
+  '''
+
+  items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
+  
+  return items_df.to_dict(orient='records')
+
+
 # GENERAL UTILITY FUNCTIONS
 
 def clip(x):
@@ -275,8 +285,10 @@ if __name__ == '__main__':
   #saveAllRatingsForAllItems('Toronto')
 
   #getUserFriends('I_6wY8_RsewziNnKhGZg4g')
-  getTopKEliteUsers(10)
+  #getTopKEliteUsers(10)
 
   #getUserItemRating('TZQSUDDcA4ek5gBd6BzcjA','qUWqjjjfpB2-4P3He5rsKw')
   
+  #print(getAllItems())
+
   pass

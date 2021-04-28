@@ -21,7 +21,13 @@ def select_random_user_liked_item(user_id):
             items_list.append(item)
             weights.append(user_ratings[item])
     
-    return random.choices(items_list, weights)[0]
+    selection = random.choices(items_list, weights)[0]
+
+    print(user_avg)
+    print(user_ratings[selection])
+    print(Utils.getItemData(selection))
+
+    return selection
 
 
 def get_full_explanation(model_id, user_id, item_id, original_score):
@@ -142,24 +148,28 @@ def get_recommendation_from_item(model, user_id, item_id):
         Returns the list of items most recommended, based on a user's preference for an item
     '''
 
-    R_ai = Recommender.get_recommendation(user_id, model)
+    sim_model = Recommender.load_model(model)
+    items = Utils.getAllItems()
     
-    user_ratings = Utils.getUserRatingsForCity(user_id)
-    user_rated_items_ids = user_ratings.keys()
-    items_list_except_j = Utils.list_except(user_rated_items_ids, item_id)
-    R_j_ai = Recommender.get_recommendation(user_id, model, items_list_except_j)
+    #R_ai = Recommender.get_recommendation(user_id, model)
+    
+    #user_ratings = Utils.getUserRatingsForCity(user_id)
+    #user_rated_items_ids = user_ratings.keys()
+    #items_list_except_j = Utils.list_except(user_rated_items_ids, item_id)
+    #R_j_ai = Recommender.get_recommendation(user_id, model, items_list_except_j)
     
     scores = {}
-    for item in R_ai:
-        scores[item] = R_ai[item] * (R_ai[item] - R_j_ai[item])
+    for item in items:
+        #scores[item] = R_ai[item] * (R_ai[item] - R_j_ai[item])
+        scores[item['id']] = item['rating'] * sim_model.get(item['id'], item_id)
 
     # prints results
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
-    item_datat = Utils.getItemData(item_id)
-    print(f'since you liked {item_data.name}({item_data.categories}), we recommend:')
+    item_data = Utils.getItemData(item_id)
+    print(f'since you liked {item_data["name"]}, we recommend:')
     while i < k:
-        print(sorted_final_ratings[i])
+        print(sorted_scores[i])
         print(Utils.getItemData(sorted_scores[i][0]))
         i += 1
     
@@ -169,8 +179,8 @@ def get_recommendation_from_item(model, user_id, item_id):
 # For Testing Purposes
 if __name__ == '__main__':
     user_id = 'GlxJs5r01_yqIgb4CYtiog'
-
-    #get_full_explanation(MODEL, user_id, '102', 3.428578365286457)
+    
+    #get_full_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '102', 3.428578365286457)
     
     item_id = select_random_user_liked_item(user_id)
-    get_recommendation_from_item(MODEL, user_id, 'item_id')
+    get_recommendation_from_item(MODEL, user_id, item_id)

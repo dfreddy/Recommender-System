@@ -120,7 +120,7 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
         counter += 1
         new_percentage = int(counter/total_items*100)
         if new_percentage > percentage:
-            if new_percentage % 10 == 0:
+            if new_percentage % 100 == 0:
                 end = time.perf_counter()
                 percentage = new_percentage
                 t = end-start
