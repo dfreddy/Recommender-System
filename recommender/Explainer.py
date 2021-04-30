@@ -64,6 +64,7 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
         items_list_except_j = Utils.list_except(user_rated_items_ids, j)
         item_influence[j] = get_influence(user_ratings, items_list_except_j, item_id, model, ra, items_df, original_score)
     
+    '''
     # CATEGORY INFLUENCE
     cat_influence = {}
     for cat in user_rated_categories.keys():
@@ -94,7 +95,7 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
 
     elites_influence = User_Similarity.get_user_based_influence(user_id, elites_similarity, item_id, original_score)
     print(f'elites influence: {elite_influence}')
-
+    '''
     
     # SORT item influence dict
     sorted_items_influence = sorted(item_influence.items(), key=operator.itemgetter(1), reverse=True)
@@ -105,7 +106,8 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
         print(f'{sorted_items_influence[i]} {user_ratings[sorted_items_influence[i][0]]} {model.get(sorted_items_influence[i][0],item_id)}')
         print(Utils.getItemData(sorted_items_influence[i][0]))
         i += 1
-        
+    
+    '''
     # SORT cat influence dict
     sorted_cat_influence = sorted(cat_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 10
@@ -114,6 +116,7 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
     while i < k:
         print(f'{sorted_cat_influence[i]}')
         i += 1
+    '''
 
 
 def get_influence(user_ratings, items_list, item_id, model, ra, items_df, original_score):
@@ -150,6 +153,7 @@ def get_recommendation_from_item(model, user_id, item_id):
 
     sim_model = Recommender.load_model(model)
     items = Utils.getAllItems()
+    items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
     
     scores = {}
     for item in items:
@@ -159,11 +163,12 @@ def get_recommendation_from_item(model, user_id, item_id):
     # prints results
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
-    item_data = Utils.getItemData(item_id)
-    print(f'since you liked {item_data["name"]}, we recommend:')
+    item_data = Utils.getItemData(item_id, items_df)
+    print(item_data)
+    print(f'since you liked {item_data["name"]}, we recommend:\n')
     while i < k:
         print(sorted_scores[i])
-        print(Utils.getItemData(sorted_scores[i][0]))
+        print(Utils.getItemData(sorted_scores[i][0], items_df))
         i += 1
     
     return sorted_scores
@@ -176,6 +181,7 @@ def get_explanation_from_item(model, user_id, item_id):
 
     sim_model = Recommender.load_model(model)
     user_ratings = Utils.getUserRatingsForCity(user_id)
+    items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
     
     scores = {}
     for item in user_ratings:
@@ -185,11 +191,13 @@ def get_explanation_from_item(model, user_id, item_id):
     # prints results
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
-    item_data = Utils.getItemData(item_id)
-    print(f'we recommend {item_data["name"]} because you liked:')
+    item_data = Utils.getItemData(item_id, items_df)
+    print(item_data)
+    print(f'we recommend {item_data["name"]} because you liked:\n')
     while i < k:
         print(sorted_scores[i])
-        print(Utils.getItemData(sorted_scores[i][0]))
+        print(user_ratings[sorted_scores[i][0]])
+        print(Utils.getItemData(sorted_scores[i][0], items_df))
         i += 1
     
     return sorted_scores
@@ -204,5 +212,5 @@ if __name__ == '__main__':
     #item_id = select_random_user_liked_item(user_id)
     #get_recommendation_from_item(MODEL, user_id, item_id)
     
-    item_id = '102'
-    get_explanation_from_item(MODEL, user_id, item_id)
+    #item_id = '102'
+    #get_explanation_from_item(MODEL, user_id, item_id)
