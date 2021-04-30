@@ -151,13 +151,6 @@ def get_recommendation_from_item(model, user_id, item_id):
     sim_model = Recommender.load_model(model)
     items = Utils.getAllItems()
     
-    #R_ai = Recommender.get_recommendation(user_id, model)
-    
-    #user_ratings = Utils.getUserRatingsForCity(user_id)
-    #user_rated_items_ids = user_ratings.keys()
-    #items_list_except_j = Utils.list_except(user_rated_items_ids, item_id)
-    #R_j_ai = Recommender.get_recommendation(user_id, model, items_list_except_j)
-    
     scores = {}
     for item in items:
         #scores[item] = R_ai[item] * (R_ai[item] - R_j_ai[item])
@@ -176,11 +169,40 @@ def get_recommendation_from_item(model, user_id, item_id):
     return sorted_scores
 
 
+def get_explanation_from_item(model, user_id, item_id):
+    '''
+        Returns the list of items most similar to the recommended item, based on a user's preference
+    '''
+
+    sim_model = Recommender.load_model(model)
+    user_ratings = Utils.getUserRatingsForCity(user_id)
+    
+    scores = {}
+    for item in user_ratings:
+        #scores[item] = R_ai[item] * (R_ai[item] - R_j_ai[item])
+        scores[item] = user_ratings[item] * sim_model.get(item, item_id)
+
+    # prints results
+    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
+    i, k = 0, 5
+    item_data = Utils.getItemData(item_id)
+    print(f'we recommend {item_data["name"]} because you liked:')
+    while i < k:
+        print(sorted_scores[i])
+        print(Utils.getItemData(sorted_scores[i][0]))
+        i += 1
+    
+    return sorted_scores
+
+
 # For Testing Purposes
 if __name__ == '__main__':
     user_id = 'GlxJs5r01_yqIgb4CYtiog'
     
     #get_full_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '102', 3.428578365286457)
     
-    item_id = select_random_user_liked_item(user_id)
-    get_recommendation_from_item(MODEL, user_id, item_id)
+    #item_id = select_random_user_liked_item(user_id)
+    #get_recommendation_from_item(MODEL, user_id, item_id)
+    
+    item_id = '102'
+    get_explanation_from_item(MODEL, user_id, item_id)
