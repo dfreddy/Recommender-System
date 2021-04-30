@@ -196,7 +196,6 @@ def get_explanation_from_item(model, user_id, item_id):
     print(f'we recommend {item_data["name"]} because you liked:\n')
     while i < k:
         print(sorted_scores[i])
-        print(user_ratings[sorted_scores[i][0]])
         print(Utils.getItemData(sorted_scores[i][0], items_df))
         i += 1
     
@@ -212,5 +211,5 @@ if __name__ == '__main__':
     #item_id = select_random_user_liked_item(user_id)
     #get_recommendation_from_item(MODEL, user_id, item_id)
     
-    #item_id = '102'
-    #get_explanation_from_item(MODEL, user_id, item_id)
+    item_id = '2030'
+    get_explanation_from_item(MODEL, user_id, item_id)

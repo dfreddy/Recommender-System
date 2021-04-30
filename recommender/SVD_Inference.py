@@ -13,9 +13,9 @@ from collections import deque
 
 np.random.seed(13575)
 
-BATCH_SIZE = 800
+BATCH_SIZE = 1000
 ITEM_NUM = 2846 # nr of items in the dataset
-DIM = 25 # nr of latent features we want
+DIM = 20 # nr of latent features we want
 EPOCH_MAX = 100
 DEVICE = "/cpu:0"
 
@@ -149,16 +149,21 @@ def SVD(data_df):
   item_a_batch = tf.placeholder(tf.int32, shape=[None], name='id_item_a')
   item_b_batch = tf.placeholder(tf.int32, shape=[None], name='id_item_b')
   similarity_batch = tf.placeholder(tf.float32, shape=[None])
+
+  base_learning_rate = np.float32(0.000001)
+  learning_rate = tf.Variable(base_learning_rate, trainable=False)
+  new_learning_rate = tf.placeholder(tf.float32, shape=[], name="new_learning_rate")
+  update_learning_rate = tf.assign(learning_rate, new_learning_rate)
   
   inference, regularizer, prediction_matrix = inference_svd(item_a_batch, item_b_batch, item_num=ITEM_NUM, dim=DIM, device=DEVICE)
   tf.train.get_or_create_global_step() # create global_step for the optimizer
-  _, train_operation = optimization_function(inference, regularizer, similarity_batch, learning_rate=0.0001, reg=0.01, device=DEVICE)
+  _, train_operation = optimization_function(inference, regularizer, similarity_batch, learning_rate=learning_rate, reg=0.05, device=DEVICE)
   init_operation = tf.global_variables_initializer()
 
   # START TF SESSION
   with tf.Session() as sesh:
     sesh.run(init_operation)
-    print("{}\t{}\t{}\t{}".format("epoch", "train_error", "val_error", "elapsed_time"))
+    print("{}\t{}\t{}\t{}\t{}".format("epoch", "train_error", "val_error", "elapsed_time", "learning rate"))
 
     # Initialise the data for the first epoch
     iter_train, iter_test, samples_per_batch = get_epoch_data(data_df)
@@ -193,11 +198,26 @@ def SVD(data_df):
 
         time_end = time.time()
         test_error = np.sqrt(np.mean(test_error))
-        print("{:3d}\t{:f}\t{:f}\t{:0.4f}(s)".format(1 + i // samples_per_batch, train_error, test_error, time_end - time_start))
-        time_start = time_end
+        epoch = 1 + i // samples_per_batch
+        print("{:3d}\t{:f}\t{:f}\t{:0.4f}(s)\t{:0.0e}".format(1 + i // samples_per_batch, train_error, test_error, time_end - time_start, learning_rate.eval()))
+        
+        # update learning rate
+        '''
+        if epoch % 25 == 0: # progressively increasing learning rate
+          sesh.run(update_learning_rate, feed_dict={new_learning_rate: learning_rate.eval() * 2})
+        '''
+        if epoch == 70:
+          sesh.run(update_learning_rate, feed_dict={new_learning_rate: learning_rate.eval() * 10})
+          base_learning_rate = base_learning_rate * 10
+        if epoch % 15 == 0: # cyclically increasing/decreasing learning rate
+          if learning_rate.eval() <= base_learning_rate:
+            sesh.run(update_learning_rate, feed_dict={new_learning_rate: learning_rate.eval() * 10})
+          else:
+            sesh.run(update_learning_rate, feed_dict={new_learning_rate: learning_rate.eval() / 10})
         
         # Generate new 80:20 of the dataset for the next epoch
         iter_train, iter_test, _ = get_epoch_data(data_df)
+        time_start = time.time()
 
     # Generate the full predictions SVD matrix
     #final_items_a = [304]
