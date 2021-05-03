@@ -64,7 +64,6 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
         items_list_except_j = Utils.list_except(user_rated_items_ids, j)
         item_influence[j] = get_influence(user_ratings, items_list_except_j, item_id, model, ra, items_df, original_score)
     
-    '''
     # CATEGORY INFLUENCE
     cat_influence = {}
     for cat in user_rated_categories.keys():
@@ -73,6 +72,9 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
             cat_influence[cat] = get_influence(user_ratings, items_list_except_cat, item_id, model, ra, items_df, original_score)
 
     # FRIENDS INFLUENCE
+    # TODO
+    # go to user_ratings_by_item and find all k of user's friends
+    # otherwise, "none of your friends have reviewed this item"
     user_item_ratings = Utils.getAllUserRatings(user_id, reviews_df)
     user_friends = Utils.getUserFriends(user_id)
     k = len(user_friends)
@@ -83,9 +85,12 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
             friends_similarity[friend] = friend_sim
 
     friends_influence = User_Similarity.get_user_based_influence(user_id, friends_similarity, item_id, original_score)
-    print(f'friends influence: {friends_influence}')
+    print(f'friends influence: {friends_influence}%')
 
     # ELITE INFLUENCE
+    # TODO
+    # go to user_ratings_by_item and find the top-k most elite users for item_id
+    # instead of finding a random k (5?) nr of elite users
     elite_users = Utils.getTopKEliteUsers(k)
     elites_similarity = {}
     for elite in elite_users:
@@ -94,29 +99,26 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
             elites_similarity[elite] = elite_sim
 
     elites_influence = User_Similarity.get_user_based_influence(user_id, elites_similarity, item_id, original_score)
-    print(f'elites influence: {elite_influence}')
-    '''
+    print(f'elites influence: {elite_influence}%')
     
     # SORT item influence dict
     sorted_items_influence = sorted(item_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
     print(Utils.getItemData(item_id))
-    print(f'top {k} items influencers')
+    print(f'top {k} items %influencers')
     while i < k:
         print(f'{sorted_items_influence[i]} {user_ratings[sorted_items_influence[i][0]]} {model.get(sorted_items_influence[i][0],item_id)}')
         print(Utils.getItemData(sorted_items_influence[i][0]))
         i += 1
     
-    '''
     # SORT cat influence dict
     sorted_cat_influence = sorted(cat_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 10
     print(Utils.getItemData(item_id))
-    print(f'top {k} category influencers')
+    print(f'top {k} category %influencers')
     while i < k:
         print(f'{sorted_cat_influence[i]}')
         i += 1
-    '''
 
 
 def get_influence(user_ratings, items_list, item_id, model, ra, items_df, original_score):
