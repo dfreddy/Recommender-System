@@ -26,7 +26,7 @@ def save_to_csv(calc_type, values):
     write.writerow(fields)
     write.writerows(rows)
 
-  print('Saved')
+  print(f'Saved {calc_type}')
 
 
 def cosine_similarity():
@@ -93,7 +93,7 @@ def cosine_similarity():
         t = (end-start)/60
         print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 'm ... ' + str(format(100*t/new_percentage, '.2f')) + 'm')
 
-  save_to_csv('cosine_similarity', similarity_matrix)
+  save_to_csv('sims/ACOS', similarity_matrix)
 
 
 def AMSD_similarity():
@@ -166,10 +166,9 @@ def AMSD_similarity():
         t = (end-start)/60
         print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 'm ... ' + str(format(100*t/new_percentage, '.2f')) + 'm')
 
-  save_to_csv('AMSD_similarity(L=16, Toronto)', similarity_matrix)
+  save_to_csv('sims/AMSD', similarity_matrix)
 
 
 if __name__ == '__main__':
   cosine_similarity()
   #AMSD_similarity()
-  

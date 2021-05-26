@@ -38,7 +38,7 @@ class PredictionSVD(object):
     return np.float32(self.bias + self.bias_u[x] + self.bias_v[y] + np.sum(np.multiply(self.u[x], self.vt[y])))
 
   def save(self):
-    folder_name = f'./resources/{self.model_id}'
+    folder_name = f'./resources/models/{self.model_id}'
     os.mkdir(folder_name)
 
     np.save(f'{folder_name}/U', self.u)
@@ -65,9 +65,9 @@ class PredictionSVD(object):
     '''
 
     self.model_id = model_id
-    self.u = np.load(f'./resources/{str(model_id)}/U.npy')
-    self.vt = np.load(f'./resources/{str(model_id)}/V.npy')
-    self.bias_u = np.load(f'./resources/{str(model_id)}/BIAS_U.npy')
-    self.bias_v = np.load(f'./resources/{str(model_id)}/BIAS_V.npy')
-    self.bias = np.load(f'./resources/{str(model_id)}/BIAS.npy')
+    self.u = np.load(f'./resources/models/{str(model_id)}/U.npy')
+    self.vt = np.load(f'./resources/models/{str(model_id)}/V.npy')
+    self.bias_u = np.load(f'./resources/models/{str(model_id)}/BIAS_U.npy')
+    self.bias_v = np.load(f'./resources/models/{str(model_id)}/BIAS_V.npy')
+    self.bias = np.load(f'./resources/models/{str(model_id)}/BIAS.npy')
     print('Loaded!')

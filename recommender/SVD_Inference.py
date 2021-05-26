@@ -19,6 +19,7 @@ DIM = 20 # nr of latent features we want
 EPOCH_MAX = 100
 DEVICE = "/cpu:0"
 
+errors_list = []
 
 def get_data_df(filename):
   '''
@@ -198,6 +199,9 @@ def SVD(data_df):
 
         time_end = time.time()
         test_error = np.sqrt(np.mean(test_error))
+        
+        errors_list.append(test_error)
+
         epoch = 1 + i // samples_per_batch
         print("{:3d}\t{:f}\t{:f}\t{:0.4f}(s)\t{:0.0e}".format(1 + i // samples_per_batch, train_error, test_error, time_end - time_start, learning_rate.eval()))
         
@@ -231,13 +235,15 @@ def SVD(data_df):
         item_b_batch: final_items_b
       }))
 
+    print(errors_list)
+
     return final_prediction
 
   return
 
 
 def get_similarity_matrix():
-  filename = './resources/AMSD_similarity(L=16).csv'
+  filename = './resources/sims/ACOS.csv'
   # filename = './resources/test.csv'
   data_df = get_data_df(filename)
   
@@ -245,9 +251,10 @@ def get_similarity_matrix():
 
 
 if __name__ == '__main__':
-  #filename = './resources/cosine_similarity.csv'
-  filename = './resources/AMSD_similarity(L=16, Toronto).csv'
+  #filename = './resources/AMSD_similarity(L=16, Toronto).csv'
   
+  filename = './resources/sims/ACOS.csv'
+
   data_df = get_data_df(filename)
   final_prediction = SVD(data_df)
   print("Training done!")
