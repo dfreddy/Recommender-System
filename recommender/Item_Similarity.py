@@ -56,8 +56,13 @@ def cosine_similarity():
       # calculate its similarity with every other item
       item_b = str(row_b['id'])
     
-      # skip if it's the same item OR if their similarity has already been calculated
-      if item_a != item_b and Utils.notRepeating(item_a, item_b, similarity_matrix):
+      # skip if their similarity has already been calculated
+      if Utils.notRepeating(item_a, item_b, similarity_matrix):
+        if item_a == item_b:
+          similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = 1
+          similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = 1
+          continue
+
         # their ratings by user
         item_a_vector = ratings_by_item[item_a]
         item_b_vector = ratings_by_item[item_b]
@@ -76,11 +81,11 @@ def cosine_similarity():
 
           similarity = dot_product / (sum(item_a_vector.values()) * sum(item_b_vector.values()))
 
-          similarity_ab = similarity * (len_mutual_users/len_item_a_vector) * ((2*len_mutual_users) / (len_item_a_vector+len_item_b_vector))
-          similarity_ba = similarity * (len_mutual_users/len_item_b_vector) * ((2*len_mutual_users) / (len_item_a_vector+len_item_b_vector))
+          #similarity_ab = similarity * (len_mutual_users/len_item_a_vector) * ((2*len_mutual_users) / (len_item_a_vector+len_item_b_vector))
+          #similarity_ba = similarity * (len_mutual_users/len_item_b_vector) * ((2*len_mutual_users) / (len_item_a_vector+len_item_b_vector))
           
-          similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity_ab
-          similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity_ba
+          similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = similarity
+          similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = similarity
 
           #print('Cosine similarity(a,b;b,a) = ' + str(format(similarity, '.4f')))
 
@@ -93,7 +98,7 @@ def cosine_similarity():
         t = (end-start)/60
         print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 'm ... ' + str(format(100*t/new_percentage, '.2f')) + 'm')
 
-  save_to_csv('sims/ACOS', similarity_matrix)
+  save_to_csv('sims/COS', similarity_matrix)
 
 
 def AMSD_similarity():
@@ -123,12 +128,14 @@ def AMSD_similarity():
       # calculate its similarity with every other item
       item_b = str(row_b['id'])
     
-      # skip if it's the same item OR if their similarity has already been calculated
-      if Utils.notRepeating(item_a, item_b, similarity_matrix):
+      # skip if their similarity has already been calculated
+      if item_a != item_b and Utils.notRepeating(item_a, item_b, similarity_matrix):
+        '''
         if item_a == item_b:
           similarity_matrix[Utils.combineItemsToKey(item_a, item_b)] = 1
           similarity_matrix[Utils.combineItemsToKey(item_b, item_a)] = 1
           continue
+        '''
 
         # their ratings by user
         item_a_vector = ratings_by_item[item_a]
@@ -166,7 +173,7 @@ def AMSD_similarity():
         t = (end-start)/60
         print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 'm ... ' + str(format(100*t/new_percentage, '.2f')) + 'm')
 
-  save_to_csv('sims/AMSD', similarity_matrix)
+  save_to_csv('sims/AMSD_no1s', similarity_matrix)
 
 
 if __name__ == '__main__':

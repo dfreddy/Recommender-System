@@ -59,10 +59,11 @@ class PredictionSVD(object):
     '''
         Loads model from memory
         model_id input can be string or int
-
-        TODO
-        verify if model actually exists in memory
     '''
+
+    if not os.path.isdir(f'./resources/models/{str(model_id)}'):
+      print('Model does not exist!')
+      return
 
     self.model_id = model_id
     self.u = np.load(f'./resources/models/{str(model_id)}/U.npy')

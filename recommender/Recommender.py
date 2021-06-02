@@ -87,6 +87,7 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
     counter, percentage, start = 0, 0, time.perf_counter()
     for index, row in city_items_df.iterrows():
         i = row['id']
+
         # normalize rating from 1..5 to 0..1
         #ri = (Utils.getItemData(i, city_items_df)['rating']-1)/4
         #ri = Utils.getItemData(i, city_items_df)['rating'] / nr_user_rated_items
@@ -101,7 +102,7 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
             # clip the few negative similarity values that might appear 
             sim_ji = sim_model.get(j,i)
             if sim_ji <= 0:
-                sim_ji = 0.000001
+                sim_ji = 0.000000000001
 
             r_aj = user_rated_items[j]
 
@@ -127,7 +128,6 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
                 print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 's')
 
     # get top-k items for user
-    '''
     sorted_final_ratings = sorted(final_ratings_dict.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
     print(f'top {k} items')
@@ -139,7 +139,6 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
         else:
             i += 1
             k += 1
-    '''
 
     return final_ratings_dict
 
@@ -174,7 +173,7 @@ def test_model(model_id):
     users_df = users_df_non_shuffled.sample(frac=1).reset_index(drop=True)
     rows = len(users_df)
     users_df = users_df.iloc[np.random.permutation(rows)].reset_index(drop=True)
-    split_index = int(rows * 0.01)
+    split_index = int(rows * 0.05)
     users_df = users_df[0:split_index]
     total_users = len(users_df)
 
@@ -194,7 +193,7 @@ def test_model(model_id):
             if new_percentage > percentage:
                 if new_percentage % 5 == 0:
                     percentage = new_percentage
-                    print_test_loading(new_percentage, start, errors, deviations, sort_devs)
+                    print_test_loading(new_percentage, start, np.sqrt(np.mean(errors)), np.mean(deviations), sort_devs)
             continue
 
         ra = Utils.getUserData(user_id, users_df)['average']
@@ -216,7 +215,7 @@ def test_model(model_id):
                 # clip the few negative similarity values that might appear 
                 sim_ji = sim_model.get(j,i)
                 if sim_ji <= 0:
-                    sim_ji = 0.000001
+                    sim_ji = 0.000000000001
 
                 r_aj = user_rated_items[j]
                 rj = Utils.getItemData(j, city_items_df)['rating']
@@ -233,7 +232,7 @@ def test_model(model_id):
 
             predicted_value = ra + (weighted_sum/weighted_bottom)
             errors.append(np.power(predicted_value - user_rated_items[i], 2))
-            deviations.append(100 * (predicted_value - user_rated_items[i]) / user_rated_items[i])
+            deviations.append(100 * abs(predicted_value - user_rated_items[i]) / user_rated_items[i])
             sorted_predicted_values[i] = predicted_value
 
         # find sorting deviation %
@@ -254,41 +253,51 @@ def test_model(model_id):
         if new_percentage > percentage:
             if new_percentage % 5 == 0:
                 percentage = new_percentage
-                print_test_loading(new_percentage, start, errors, deviations, sort_devs)
+                print_test_loading(new_percentage, start, np.sqrt(np.mean(errors)), np.mean(deviations), sort_devs)
                 
     rmse = np.sqrt(np.mean(errors))
-    md = np.mean(deviations)
+    rmsd = np.mean(deviations)
     std = np.std(deviations)
 
-    return rmse, md, std
+    return rmse, rmsd, std
 
 
 # For Testing Purposes
 if __name__ == '__main__':
     #train_model()
 
-    get_recommendation('GlxJs5r01_yqIgb4CYtiog', MODEL)
-    
-    '''
-    rmse, md, std = test_model(MODEL)
-    print(f'rmse = {rmse}')
-    print(f'mean of deviation % = {md}')
-    print(f'deviation of deviation % = {std}')
-    '''
-    '''
-    model = load_model('20210402181019')
+    test = '20210528004547'
+    #get_recommendation('GlxJs5r01_yqIgb4CYtiog', amsd_model)
 
+    '''
+    rmse, rmsd, std = test_model(test)
+    print(f'rmse = {rmse}')
+    print(f'root mean squared deviation % = {rmsd}')
+    print(f'deviation of deviation % = {std}')
+
+    model = load_model(test)
+    similarities = []
+    i, k = 0, 2845
+    while i < k:
+        for j in range(0,k):
+            similarities.append(model.get(i,j))
+        i += 1
+    print(f'mean = {np.mean(similarities)}')
+
+    '''
+    '''
+    model = load_model(test)
     similarities = {}
     sim_list = []
-    i, k, item= 0, 2846, 304
-    print(model.get(item, item))
+    i, k, item= 0, 2846, 24
+    print(Utils.getItemData(item))
     while i <= k-1:
         similarities[i] = model.get(item,i)
         sim_list.append(similarities[i])
         i += 1
 
     sim_list = np.array(sim_list)
-    print(f'Percentage of negative similarities for {item}: {(np.sum(sim_list < 0))/3518*100}')
+    print(f'Percentage of negative similarities for {item}: {(100*np.sum(sim_list < 0))/sim_list.size}')
 
     sorted_similarities = sorted(similarities.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
@@ -298,12 +307,5 @@ if __name__ == '__main__':
         print(Utils.getItemData(sorted_similarities[i][0]))
         i += 1
     '''
-        
-    '''
-    model = load_model('20210331033705')
-    print(model.get(304,3049))
-    print(model.get(744,3049))
-    print(model.get(2122,3049))
-    '''    
 
     pass

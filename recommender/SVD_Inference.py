@@ -20,6 +20,7 @@ EPOCH_MAX = 100
 DEVICE = "/cpu:0"
 
 errors_list = []
+learning_rates_list = []
 
 def get_data_df(filename):
   '''
@@ -86,8 +87,8 @@ def optimization_function(inference, regularizer, similarity_batch, learning_rat
     l2_loss_function = tf.nn.l2_loss(tf.subtract(inference, similarity_batch))
     l2_norm = tf.constant(reg, dtype=tf.float32, shape=[], name='l2')
     cost = tf.add(l2_loss_function, tf.multiply(regularizer, l2_norm))
-    zeroes_penalty = tf.reduce_sum(tf.subtract(tf.abs(inference), inference))
-    #cost = tf.add(cost, zeroes_penalty)
+    zeroes_penalty = tf.nn.l2_loss(tf.subtract(tf.abs(inference), inference))
+    cost = tf.add(cost, zeroes_penalty)
 
     # Optimization done thru derivative calculation using Tensorflow's Adam Optimizer
     train_operation = tf.train.AdamOptimizer(learning_rate).minimize(cost, global_step=global_step)
@@ -199,20 +200,20 @@ def SVD(data_df):
 
         time_end = time.time()
         test_error = np.sqrt(np.mean(test_error))
-        
         errors_list.append(test_error)
-
         epoch = 1 + i // samples_per_batch
         print("{:3d}\t{:f}\t{:f}\t{:0.4f}(s)\t{:0.0e}".format(1 + i // samples_per_batch, train_error, test_error, time_end - time_start, learning_rate.eval()))
-        
+        learning_rates_list.append(learning_rate.eval())
+
         # update learning rate
         '''
         if epoch % 25 == 0: # progressively increasing learning rate
           sesh.run(update_learning_rate, feed_dict={new_learning_rate: learning_rate.eval() * 2})
-        '''
+        
         if epoch == 70:
           sesh.run(update_learning_rate, feed_dict={new_learning_rate: learning_rate.eval() * 10})
           base_learning_rate = base_learning_rate * 10
+        '''
         if epoch % 15 == 0: # cyclically increasing/decreasing learning rate
           if learning_rate.eval() <= base_learning_rate:
             sesh.run(update_learning_rate, feed_dict={new_learning_rate: learning_rate.eval() * 10})
@@ -224,8 +225,6 @@ def SVD(data_df):
         time_start = time.time()
 
     # Generate the full predictions SVD matrix
-    #final_items_a = [304]
-    #final_items_b = [i for i in range(5)]
     final_items_a = [i for i in range(ITEM_NUM)]
     final_items_b = [i for i in range(ITEM_NUM)]
     final_prediction = Matrix.PredictionSVD(sesh.run(
@@ -234,6 +233,9 @@ def SVD(data_df):
         item_a_batch: final_items_a,
         item_b_batch: final_items_b
       }))
+
+    print(f'Validation error = {errors_list[-1]}')
+    print(f'Mean similarity = {data_df["similarity"].mean()}')
 
     print(errors_list)
 
@@ -251,9 +253,9 @@ def get_similarity_matrix():
 
 
 if __name__ == '__main__':
-  #filename = './resources/AMSD_similarity(L=16, Toronto).csv'
-  
-  filename = './resources/sims/ACOS.csv'
+  filename = './resources/sims/COS_no1s.csv'
+  #filename = './resources/sims/AMSD.csv'
+  #filename = './resources/sims/ACOS.csv'
 
   data_df = get_data_df(filename)
   final_prediction = SVD(data_df)
