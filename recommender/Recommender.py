@@ -54,14 +54,12 @@ def get_sorted_dict_indexes(unsorted_dict):
 def get_recommendation(user_id, model_id, user_rated_items_ids=None):
     '''
         Input:  user's id; user_rated_items_ids allows for filtering certain items from the user's rated pool
-
+        
         Output: dict of item ids and their recommendation score; sorted list of (item, R)
-
+        
         Formula:
-                R^(a,i) = ra + (E_j sim(j,i) * (r(a,j) - rj))
+                R^(a,i) = (E_j sim(j,i) * r(a,j)) / E_j |sim(j,i)|
             where,
-            ra       = average ratings of user a
-            rj       = average rating of item j
             r(a,j)   = rating user a gave to item j
             sim(j,i) = similarity between items j and i, for every j where r(a,j) exists
     '''
@@ -73,6 +71,12 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
     if user_rated_items_ids is None:
         user_rated_items_ids = user_rated_items.keys()
     nr_user_rated_items = len(user_rated_items_ids)
+    
+    # min rated items clause
+    if nr_user_rated_items < 30:
+        print("This user hasn't rated enough items yet.")
+        return
+
     ra = Utils.getUserData(user_id)['average']
     sim_model = load_model(model_id)
     
@@ -88,35 +92,27 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
     for index, row in city_items_df.iterrows():
         i = row['id']
 
-        # normalize rating from 1..5 to 0..1
-        #ri = (Utils.getItemData(i, city_items_df)['rating']-1)/4
-        #ri = Utils.getItemData(i, city_items_df)['rating'] / nr_user_rated_items
-
         # skip item if already rated by user
         if i in user_rated_items_ids:
             counter += 1
             continue
 
-        weighted_sum, weighted_bottom = 0, 0
+        weighted_sum_top, weighted_sum_bottom = 0, 0
         for j in user_rated_items_ids:
-            # clip the few negative similarity values that might appear 
             sim_ji = sim_model.get(j,i)
+
+            # clip the few negative similarity values that might appear
+            # or straight up ignore them
             if sim_ji <= 0:
-                sim_ji = 0.000000000001
+                continue
 
-            r_aj = user_rated_items[j]
+            weighted_sum_top += sim_ji * user_rated_items[j]
+            weighted_sum_bottom += sim_ji
 
-            #weighted_sum += sim_ji * ((r_aj - rj[j] + 4) / 2) * ri
-            weighted_sum += sim_ji * (r_aj - rj[j])
-            weighted_bottom += sim_ji
-
-            #if i == 2446:
-            #    print(f'sim_ji for {j}: {sim_ji}')
-
-        final_ratings_dict[i] = ra + (weighted_sum/weighted_bottom)
-
-        #if i == 2446:
-        #    print(weighted_sum)
+        if weighted_sum_bottom == 0:
+            final_ratings_dict[i] = 1
+        else:
+            final_ratings_dict[i] = weighted_sum_top / weighted_sum_bottom
 
         counter += 1
         new_percentage = int(counter/total_items*100)
@@ -148,10 +144,9 @@ def test_model(model_id):
         Input: user to find recommendation for & model
         Output: recommended item's id
 
-        R^(a,i) = ra + (E_j sim(j,i) * (r(a,j) - rj))
-        where,
-            ra       = average ratings of user a
-            rj       = average rating of item j
+        Formula:
+                R^(a,i) = (E_j sim(j,i) * r(a,j)) / E_j |sim(j,i)|
+            where,
             r(a,j)   = rating user a gave to item j
             sim(j,i) = similarity between items j and i, for every j where r(a,j) exists
     '''
@@ -187,7 +182,7 @@ def test_model(model_id):
         user_rated_items = Utils.getUserRatingsForCity(user_id, reviews_df)
         user_rated_items_ids = user_rated_items.keys()
         nr_user_rated_items = len(user_rated_items_ids)
-        if nr_user_rated_items < 10:
+        if nr_user_rated_items < 30:
             counter += 1
             new_percentage = int(counter/total_users*100)
             if new_percentage > percentage:
@@ -210,27 +205,23 @@ def test_model(model_id):
         sorted_predicted_values = {}
         for i in user_rated_items_ids:
 
-            weighted_sum, weighted_bottom = 0, 0
+            weighted_sum_top, weighted_sum_bottom = 0, 0
             for j in user_rated_items_ids:
-                # clip the few negative similarity values that might appear 
                 sim_ji = sim_model.get(j,i)
-                if sim_ji <= 0:
-                    sim_ji = 0.000000000001
-
-                r_aj = user_rated_items[j]
-                rj = Utils.getItemData(j, city_items_df)['rating']
-
-                # former calc
-                #weighted_sum += sim_ji * ((r_aj - rj[j] + 4) / 2) * ri
                 
-                weighted_sum += sim_ji * (r_aj - rj)
-                weighted_bottom += sim_ji
+                # clip the few negative similarity values that might appear 
+                # or straight up ignore them
+                if sim_ji <= 0:
+                    continue
 
-                # testing
-                #if i == 2446:
-                #    print(f'sim_ji for {j}: {sim_ji}')
+                weighted_sum_top += sim_ji * user_rated_items[j]
+                weighted_sum_bottom += sim_ji
 
-            predicted_value = ra + (weighted_sum/weighted_bottom)
+            if weighted_sum_bottom == 0:
+                predicted_value = 1
+            else:
+                predicted_value = weighted_sum_top / weighted_sum_bottom
+
             errors.append(np.power(predicted_value - user_rated_items[i], 2))
             deviations.append(100 * abs(predicted_value - user_rated_items[i]) / user_rated_items[i])
             sorted_predicted_values[i] = predicted_value
@@ -266,8 +257,10 @@ def test_model(model_id):
 if __name__ == '__main__':
     #train_model()
 
-    test = '20210528004547'
-    #get_recommendation('GlxJs5r01_yqIgb4CYtiog', amsd_model)
+    test = '20210602172802'
+    #get_recommendation('GlxJs5r01_yqIgb4CYtiog', MODEL)
+    get_recommendation('V4TPbscN8JsFbEFiwOVBKw', MODEL)
+    
 
     '''
     rmse, rmsd, std = test_model(test)
