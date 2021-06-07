@@ -20,13 +20,11 @@ def load_model(model_id):
     return model
 
 
-def print_test_loading(new_percentage, start, errors, deviations, sort_devs):
+def print_test_loading(new_percentage, start, errors):
     end = time.perf_counter()
     t = (end-start)/60
     rmse = format(np.sqrt(np.mean(errors)), '.3f')
-    md = format(np.mean(deviations), '.1f')
-    std = format(np.std(deviations), '.1f')
-    print("{}\t\t{}\t\t{}\t{}\t{}".format(str(new_percentage) + '%', str(format(t, '.1f')) + 'm', rmse, md, np.mean(sort_devs)))
+    print("{}\t\t{}\t\t{}".format(str(new_percentage) + '%', str(format(t, '.1f')) + 'm', rmse))
 
 
 def get_sorted_dict_indexes(unsorted_dict):
@@ -73,7 +71,7 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
     nr_user_rated_items = len(user_rated_items_ids)
     
     # min rated items clause
-    if nr_user_rated_items < 30:
+    if nr_user_rated_items < 10:
         print("This user hasn't rated enough items yet.")
         return
 
@@ -123,6 +121,7 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
                 t = end-start
                 print(str(new_percentage) + '% -> ' + str(format(t, '.2f')) + 's')
 
+    '''
     # get top-k items for user
     sorted_final_ratings = sorted(final_ratings_dict.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
@@ -135,6 +134,7 @@ def get_recommendation(user_id, model_id, user_rated_items_ids=None):
         else:
             i += 1
             k += 1
+    '''
 
     return final_ratings_dict
 
@@ -156,7 +156,6 @@ def test_model(model_id):
     # deviations are the percentage of deviation from the predicted value (not absolute values)
     errors = []
     deviations = []
-    sort_devs = []
     sim_model = load_model(model_id)
     
     # load city items and reviews
@@ -175,24 +174,25 @@ def test_model(model_id):
     # iterate users
     start = time.perf_counter()
     counter, percentage = 0, 0
-    print("{}\t{}\t{}\t{}\t{}".format("progress", "total time", "RMSE", "MD", "SORT DEV"))
+    print("{}\t{}\t{}".format("progress", "total time", "RMSE"))
     for index, row in users_df.iterrows():
         # get user data
         user_id = row['user']
         user_rated_items = Utils.getUserRatingsForCity(user_id, reviews_df)
         user_rated_items_ids = user_rated_items.keys()
         nr_user_rated_items = len(user_rated_items_ids)
-        if nr_user_rated_items < 30:
+        if nr_user_rated_items < 10:
             counter += 1
             new_percentage = int(counter/total_users*100)
             if new_percentage > percentage:
                 if new_percentage % 5 == 0:
                     percentage = new_percentage
-                    print_test_loading(new_percentage, start, np.sqrt(np.mean(errors)), np.mean(deviations), sort_devs)
+                    print_test_loading(new_percentage, start, np.sqrt(np.mean(errors)))
             continue
 
         ra = Utils.getUserData(user_id, users_df)['average']
         
+        '''
         # sort ratings
         sorted_ratings = get_sorted_dict_indexes(user_rated_items)
         # make equal ratings be arrays
@@ -200,6 +200,7 @@ def test_model(model_id):
         for item in sorted_ratings:
             if index_counter[sorted_ratings[item]] > 1:
                 sorted_ratings[item] = [sorted_ratings[item], sorted_ratings[item] + index_counter[sorted_ratings[item]] - 1]
+        '''
 
         # find the predicted user rating for every item they've already rated
         sorted_predicted_values = {}
@@ -223,9 +224,9 @@ def test_model(model_id):
                 predicted_value = weighted_sum_top / weighted_sum_bottom
 
             errors.append(np.power(predicted_value - user_rated_items[i], 2))
-            deviations.append(100 * abs(predicted_value - user_rated_items[i]) / user_rated_items[i])
             sorted_predicted_values[i] = predicted_value
 
+        '''
         # find sorting deviation %
         sorted_predicted_ratings = get_sorted_dict_indexes(sorted_predicted_values)
         sort_dev = 0
@@ -238,36 +239,37 @@ def test_model(model_id):
                 continue
         sort_dev = sort_dev / nr_user_rated_items
         sort_devs.append(sort_dev)
+        '''
 
         counter += 1
         new_percentage = int(counter/total_users*100)
         if new_percentage > percentage:
             if new_percentage % 5 == 0:
                 percentage = new_percentage
-                print_test_loading(new_percentage, start, np.sqrt(np.mean(errors)), np.mean(deviations), sort_devs)
-                
-    rmse = np.sqrt(np.mean(errors))
-    rmsd = np.mean(deviations)
-    std = np.std(deviations)
+                print_test_loading(new_percentage, start, np.sqrt(np.mean(errors)))
 
-    return rmse, rmsd, std
+    rmse = np.sqrt(np.mean(errors))
+    #rmsd = np.mean(deviations)
+    #std = np.std(deviations)
+
+    return rmse#, rmsd, std
 
 
 # For Testing Purposes
 if __name__ == '__main__':
     #train_model()
 
-    test = '20210602172802'
+    test = '20210603205401'
     #get_recommendation('GlxJs5r01_yqIgb4CYtiog', MODEL)
-    get_recommendation('V4TPbscN8JsFbEFiwOVBKw', MODEL)
-    
+    #get_recommendation('V4TPbscN8JsFbEFiwOVBKw', MODEL)
+        
+    rmse = test_model(test)
+    #rmse, rmsd, std = test_model(test)
+    print(f'RMSE = {rmse}')
+    #print(f'mean deviation = {rmsd}')
+    #print(f'deviation of deviation = {std}')
 
     '''
-    rmse, rmsd, std = test_model(test)
-    print(f'rmse = {rmse}')
-    print(f'root mean squared deviation % = {rmsd}')
-    print(f'deviation of deviation % = {std}')
-
     model = load_model(test)
     similarities = []
     i, k = 0, 2845

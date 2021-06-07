@@ -48,12 +48,92 @@ def getAllRatingsForAllItems(city):
   return None
 
 
-def saveAllRatingsForAllItems(city):
+def getUsersThatRatedItem(item_id, user_filter=None, json_data=None):
+  '''
+      Returns all users that rated the input item in the format:
+        [ user_id1, user_id2, ... ]
+      
+      item_id: input item
+      user_filter: list of user ids to filter
+      json_data: can preload the json data
+  '''
+
+  item_id = str(item_id)
+
+  if json_data is None:
+    filename = '../yelp_dataset/resources/'+CITY+'/user_ratings_by_item.json'
+    try:
+      file = open(filename, encoding='utf8', mode='r')
+    except IOError:
+      saveAllRatingsForAllItems()
+      file = open(filename, encoding='utf8', mode='r')
+    finally:
+      json_data = json.load(file)
+      users_rated = list(json_data[item_id].keys())
+
+      if user_filter is None:
+        return users_rated
+
+      return list( set(users_rated) & set(user_filter) )
+  
+  else:
+    users_rated = list(json_data[item_id].keys())
+
+    if user_filter is None:
+      return users_rated
+
+    return list( set(users_rated) & set(user_filter) )
+
+  return None
+
+
+def getFilteredAverageItemRating(item_id, user_filter, json_data=None):
+  '''
+      Returns the average rating of the input item, based on the ratings given by the user_filter list of users
+  '''
+
+  item_id = str(item_id)
+  
+  if json_data is None:
+    filename = '../yelp_dataset/resources/'+CITY+'/user_ratings_by_item.json'
+    try:
+      file = open(filename, encoding='utf8', mode='r')
+    except IOError:
+      saveAllRatingsForAllItems()
+      file = open(filename, encoding='utf8', mode='r')
+    finally:
+      json_data = json.load(file)
+      total = 0
+      k = len(user_filter)
+      ratings = json_data[item_id]
+
+      for user in user_filter:
+        total += ratings[user]
+  
+      return total / k
+
+  else:
+    total = 0
+    k = len(user_filter)
+    ratings = json_data[item_id]
+
+    for user in user_filter:
+      total += ratings[user]
+
+    return total / k
+  
+  return None
+
+
+def saveAllRatingsForAllItems(city=None):
   '''
       Saves all ratings for all items into a json, in the format:
         { "item": { "user": rating, ... }, ... }
   '''
 
+  if city is None:
+    city = CITY
+  
   all_ratings = {}
   counter = 0
 
@@ -230,6 +310,16 @@ def getAllItems():
   items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
   
   return items_df.to_dict(orient='records')
+
+
+def getAllItemsIDs():
+  '''
+      Returns a list of all items ids
+  '''
+
+  items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
+  
+  return items_df['id'].tolist()
 
 
 # GENERAL UTILITY FUNCTIONS

@@ -62,19 +62,21 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
 
         # calculate item influence
         items_list_except_j = Utils.list_except(user_rated_items_ids, j)
-        item_influence[j] = get_influence(user_ratings, items_list_except_j, item_id, model, ra, items_df, original_score)
+        item_influence[j] = get_influence(user_ratings, items_list_except_j, item_id, model, original_score)
     
     # CATEGORY INFLUENCE
     cat_influence = {}
     for cat in user_rated_categories.keys():
         if len(user_rated_categories[cat]) > 1:
             items_list_except_cat = Utils.list_except(user_rated_items_ids, user_rated_categories[cat])
-            cat_influence[cat] = get_influence(user_ratings, items_list_except_cat, item_id, model, ra, items_df, original_score)
+            cat_influence[cat] = get_influence(user_ratings, items_list_except_cat, item_id, model, original_score)
+
 
     # FRIENDS INFLUENCE
     # TODO
     # go to user_ratings_by_item and find all k of user's friends
     # otherwise, "none of your friends have reviewed this item"
+    '''
     user_item_ratings = Utils.getAllUserRatings(user_id, reviews_df)
     user_friends = Utils.getUserFriends(user_id)
     k = len(user_friends)
@@ -86,6 +88,8 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
 
     friends_influence = User_Similarity.get_user_based_influence(user_id, friends_similarity, item_id, original_score)
     print(f'friends influence: {friends_influence}%')
+    '''
+
 
     # ELITE INFLUENCE
     # TODO
@@ -121,9 +125,9 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
         i += 1
 
 
-def get_influence(user_ratings, items_list, item_id, model, ra, items_df, original_score):
+def get_influence(user_ratings, items_list, item_id, model, original_score):
     '''
-        Minimalist user recommender prediction algorithm for just one item
+        Minimalist recommender prediction algorithm for just one item
         Returns the % influence in the recommendation
 
         user_ratings = dict of user rated items and their given rating
@@ -132,25 +136,27 @@ def get_influence(user_ratings, items_list, item_id, model, ra, items_df, origin
     '''
     
     predicted_score = 0
-    weighted_sum, weighted_bottom = 0, 0
+    weighted_sum_top, weighted_sum_bottom = 0, 0
     for j in items_list:
         sim_ji = model.get(j,item_id)
+        # skip negative similarities
         if sim_ji <= 0:
-            sim_ji = 0.000001
+            continue
 
-        r_aj = user_ratings[j]
-        rj = Utils.getItemData(j, items_df)['rating']
-        weighted_sum += sim_ji * (r_aj - rj)
-        weighted_bottom += sim_ji
+        weighted_sum_top += sim_ji * user_ratings[j]
+        weighted_sum_bottom += sim_ji
 
-    predicted_score = ra + (weighted_sum/weighted_bottom)
+    if weighted_sum_bottom == 0:
+                predicted_score = 1
+    else:
+        predicted_score = weighted_sum_top / weighted_sum_bottom
 
     return 100*(original_score - predicted_score) / original_score
 
 
-def get_recommendation_from_item(model, user_id, item_id):
+def get_most_similar_items(model, item_id):
     '''
-        Returns the list of items most recommended, based on a user's preference for an item
+        Returns the sorted dict of items most useful and similar to the input item
     '''
 
     sim_model = Recommender.load_model(model)
@@ -159,7 +165,6 @@ def get_recommendation_from_item(model, user_id, item_id):
     
     scores = {}
     for item in items:
-        #scores[item] = R_ai[item] * (R_ai[item] - R_j_ai[item])
         scores[item['id']] = item['rating'] * sim_model.get(item['id'], item_id)
 
     # prints results
@@ -176,42 +181,68 @@ def get_recommendation_from_item(model, user_id, item_id):
     return sorted_scores
 
 
-def get_explanation_from_item(model, user_id, item_id):
+def getFriendsBasedRecommendation(model, user_id):
     '''
-        Returns the list of items most similar to the recommended item, based on a user's preference
+        Step 1: fetch user's friends
+        Step 2: fetch items liked by all friends (mean friends ratings for items > 4)
+        Step 3: run recommender with a filter on items available for recommendation
+        Step 4: recommend top items, "Because your friends like these items, ..."
     '''
 
-    sim_model = Recommender.load_model(model)
-    user_ratings = Utils.getUserRatingsForCity(user_id)
-    items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
+    # step 1
+    user_friends = Utils.getUserFriends(user_id)
+
+    # step 2
+    filename = '../yelp_dataset/resources/'+CITY+'/user_ratings_by_item.json'
+    try:
+        file = open(filename, encoding='utf8', mode='r')
+    except IOError:
+        Utils.saveAllRatingsForAllItems()
+        file = open(filename, encoding='utf8', mode='r')
+    finally:
+        json_data = json.load(file)
+
+    items_ids = Utils.getAllItemsIDs()
+    friends_items = []
     
-    scores = {}
-    for item in user_ratings:
-        #scores[item] = R_ai[item] * (R_ai[item] - R_j_ai[item])
-        scores[item] = user_ratings[item] * sim_model.get(item, item_id)
+    for item in items_ids:
+        users = Utils.getUsersThatRatedItem(item, user_filter=user_friends, json_data=json_data)
+        if len(users) > 1: # have at least more than 1 friend rate an item to be considered
+            avg_rating = Utils.getFilteredAverageItemRating(item, users, json_data=json_data)
+            if avg_rating >= 3.5: # anything rounded up to 4 is considered a good rating
+                friends_items.append(item)
 
-    # prints results
-    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
+    # step 3
+    recommendation_dict = Recommender.get_recommendation(user_id, MODEL)
+    filtered_recommendation_dict = dict(filter(lambda elem: elem[0] in friends_items, recommendation_dict.items()))
+    
+    # step 4
+    sorted_final_ratings = sorted(filtered_recommendation_dict.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
-    item_data = Utils.getItemData(item_id, items_df)
-    print(item_data)
-    print(f'we recommend {item_data["name"]} because you liked:\n')
+    print(f'top {k} items')
     while i < k:
-        print(sorted_scores[i])
-        print(Utils.getItemData(sorted_scores[i][0], items_df))
-        i += 1
-    
-    return sorted_scores
+        if Utils.getItemData(sorted_final_ratings[i][0])['rating'] > 3.0:
+            print(sorted_final_ratings[i])
+            print(Utils.getItemData(sorted_final_ratings[i][0]))
+            i += 1
+        else:
+            i += 1
+            k += 1
+
+    return None
 
 
 # For Testing Purposes
 if __name__ == '__main__':
+    user_id = 'V4TPbscN8JsFbEFiwOVBKw'
     user_id = 'GlxJs5r01_yqIgb4CYtiog'
     
-    #get_full_explanation(MODEL, 'GlxJs5r01_yqIgb4CYtiog', '102', 3.428578365286457)
+    #get_full_explanation(MODEL, user_id, '102', 3.428578365286457)
     
     #item_id = select_random_user_liked_item(user_id)
-    #get_recommendation_from_item(MODEL, user_id, item_id)
+    #get_most_similar_items(MODEL, item_id)
     
     item_id = '2030'
-    get_explanation_from_item(MODEL, user_id, item_id)
+    #get_explanation_from_item(MODEL, user_id, item_id)
+
+    getFriendsBasedRecommendation(MODEL, user_id)

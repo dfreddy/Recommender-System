@@ -28,7 +28,7 @@ amsd_no1s = '''
     Validation error    = 0.0008967842923519925
     Mean similarity     = 0.0004945109831169248
     Ratio               = 1.8134769964
-    Saved model: 20210527225958
+    Saved model: 20210602172802
     '''
 
 amsd = '''
@@ -56,7 +56,7 @@ cos_no1s = '''
     Validation error    = 0.0008451946375879134
     Mean similarity     = 0.00017452312749810517
     Ratio               = 4.842880423381
-    Saved model: 20210528004547
+    Saved model: 20210603205401
     '''
 
 cos = '''
