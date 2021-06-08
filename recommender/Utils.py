@@ -87,6 +87,84 @@ def getUsersThatRatedItem(item_id, user_filter=None, json_data=None):
   return None
 
 
+def getKMostEliteReviewers(item_id, k, json_data=None):
+  '''
+      Returns the IDs of the top-k most elite users that rated the input item
+  '''
+
+  # if K is too low, default to defining a top elite user as one with at least 8 years of being elite
+  if k < 2:
+    elite_threshold = 8
+
+  item_id = str(item_id)
+
+  if json_data is None:
+    filename = '../yelp_dataset/resources/'+CITY+'/user_ratings_by_item.json'
+    try:
+      file = open(filename, encoding='utf8', mode='r')
+    except IOError:
+      saveAllRatingsForAllItems()
+      file = open(filename, encoding='utf8', mode='r')
+    finally:
+      json_data = json.load(file)
+      users_rated = list(json_data[item_id].keys())
+
+      # retrive the user's elite values
+      users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
+      users_elite_dict = {}
+      for user in users_rated:
+        user_elite_value = getUserData(user, user_df)['elite']
+        users_elite_dict[user] = user_elite_value
+
+      # sort elite values
+      sorted_elite_users = sorted(users_elite_dict.items(), key=operator.itemgetter(1), reverse=True)
+      top_k_elite_users = []
+
+      if k > 1:
+        i = 0
+        while i<k:
+          top_k_elite_users.append(sorted_elite_users[i][0])
+          i += 1
+      else:
+        for elite_user in sorted_elite_users:
+          if elite_user[1] > elite_threshold:
+            top_k_elite_users.append(elite_user[0])
+          else:
+            break
+
+      return top_k_elite_users
+
+  else:
+    users_rated = list(json_data[item_id].keys())
+
+    # retrive the user's elite values
+    users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
+    users_elite_dict = {}
+    for user in users_rated:
+      user_elite_value = getUserData(user, user_df)['elite']
+      users_elite_dict[user] = user_elite_value
+
+    # sort elite values
+    sorted_elite_users = sorted(users_elite_dict.items(), key=operator.itemgetter(1), reverse=True)
+    top_k_elite_users = []
+    
+    if k > 1:
+      i = 0
+      while i<k:
+        top_k_elite_users.append(sorted_elite_users[i][0])
+        i += 1
+    else:
+      for elite_user in sorted_elite_users:
+        if elite_user[1] > elite_threshold:
+          top_k_elite_users.append(elite_user[0])
+        else:
+          break
+
+    return top_k_elite_users
+  
+  return None
+
+
 def getFilteredAverageItemRating(item_id, user_filter, json_data=None):
   '''
       Returns the average rating of the input item, based on the ratings given by the user_filter list of users

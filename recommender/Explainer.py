@@ -73,29 +73,26 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
 
 
     # FRIENDS INFLUENCE
-    # TODO
-    # go to user_ratings_by_item and find all k of user's friends
-    # otherwise, "none of your friends have reviewed this item"
-    '''
     user_item_ratings = Utils.getAllUserRatings(user_id, reviews_df)
     user_friends = Utils.getUserFriends(user_id)
-    k = len(user_friends)
-    friends_similarity = {}
-    for friend in user_friends:
-        friend_sim = User_Similarity.AMSD_user_similarity(user_id, friend, user_item_ratings)
-        if friend_sim is not None:
-            friends_similarity[friend] = friend_sim
+    item_reviewers = Utils.getUsersThatRatedItem(item_id)
+    user_friends_and_reviewers = list(set(user_friends) & set(item_reviewers)) # intersection between user's friends and users that reviewed the item
+    k = len(user_friends_and_reviewers)
+    if k < 2:
+        print('Not enough friends have reviewed this item')
+    else:
+        friends_similarity = {}
+        for friend in user_friends_and_reviewers:
+            friend_sim = User_Similarity.AMSD_user_similarity(user_id, friend, user_item_ratings)
+            if friend_sim is not None:
+                friends_similarity[friend] = friend_sim
 
-    friends_influence = User_Similarity.get_user_based_influence(user_id, friends_similarity, item_id, original_score)
-    print(f'friends influence: {friends_influence}%')
-    '''
+        friends_influence = User_Similarity.get_user_based_influence(user_id, friends_similarity, item_id, original_score)
+        print(f'friends influence: {friends_influence}%')
 
 
     # ELITE INFLUENCE
-    # TODO
-    # go to user_ratings_by_item and find the top-k most elite users for item_id
-    # instead of finding a random k (5?) nr of elite users
-    elite_users = Utils.getTopKEliteUsers(k)
+    elite_users = Utils.getKMostEliteReviewers(item_id, k)
     elites_similarity = {}
     for elite in elite_users:
         elite_sim = User_Similarity.AMSD_user_similarity(user_id, elite, user_item_ratings)
@@ -157,6 +154,9 @@ def get_influence(user_ratings, items_list, item_id, model, original_score):
 def get_most_similar_items(model, item_id):
     '''
         Returns the sorted dict of items most useful and similar to the input item
+
+        utility -> good rating
+        similarity -> item-item similarity value
     '''
 
     sim_model = Recommender.load_model(model)
@@ -183,6 +183,8 @@ def get_most_similar_items(model, item_id):
 
 def getFriendsBasedRecommendation(model, user_id):
     '''
+        Returns the user's recommendation based on their friends' most liked items
+
         Step 1: fetch user's friends
         Step 2: fetch items liked by all friends (mean friends ratings for items > 4)
         Step 3: run recommender with a filter on items available for recommendation
