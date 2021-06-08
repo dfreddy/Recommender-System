@@ -39,8 +39,9 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
     model = Recommender.load_model(model_id)
     # load user data
     user_ratings = Utils.getUserRatingsForCity(user_id)
+    user_liked_items = dict(filter(lambda elem: elem[1] >= ra, user_ratings.items()))
     user_rated_items_ids = user_ratings.keys()
-    nr_user_rated_items = len(user_rated_items_ids)
+    
     users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
     ra = Utils.getUserData(user_id, users_df)['average']
     reviews_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/reviews.csv')
@@ -49,7 +50,7 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
     items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
     user_rated_categories = {} # {'category_1': [item_id_1, item_id_2, ...]}
     item_influence = {}
-    for j in user_rated_items_ids:
+    for j in user_liked_items.keys(): # only calculating the influence of items the user liked
         # get item categories for later
         item_categories = Utils.getItemData(j, items_df)['categories'].replace(', ', ',').split(',')
         
@@ -128,7 +129,7 @@ def get_influence(user_ratings, items_list, item_id, model, original_score):
         Returns the % influence in the recommendation
 
         user_ratings = dict of user rated items and their given rating
-        items_list   = list of user rated items' ids
+        items_list   = list of user rated items' ids (useful for filtering out a number of items)
         item_id      = item originally recommended
     '''
     
