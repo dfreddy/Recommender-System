@@ -37,13 +37,12 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
 
     # load similarity model
     model = Recommender.load_model(model_id)
-    # load user data
+    # load user data    
+    users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
+    ra = Utils.getUserData(user_id, users_df)['average']
     user_ratings = Utils.getUserRatingsForCity(user_id)
     user_liked_items = dict(filter(lambda elem: elem[1] >= ra, user_ratings.items()))
     user_rated_items_ids = user_ratings.keys()
-    
-    users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
-    ra = Utils.getUserData(user_id, users_df)['average']
     reviews_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/reviews.csv')
 
     # ITEM INFLUENCE
@@ -65,14 +64,16 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
         items_list_except_j = Utils.list_except(user_rated_items_ids, j)
         item_influence[j] = get_influence(user_ratings, items_list_except_j, item_id, model, original_score)
     
+    '''
     # CATEGORY INFLUENCE
     cat_influence = {}
     for cat in user_rated_categories.keys():
         if len(user_rated_categories[cat]) > 1:
             items_list_except_cat = Utils.list_except(user_rated_items_ids, user_rated_categories[cat])
             cat_influence[cat] = get_influence(user_ratings, items_list_except_cat, item_id, model, original_score)
+    '''
 
-
+    '''
     # FRIENDS INFLUENCE
     user_item_ratings = Utils.getAllUserRatings(user_id, reviews_df)
     user_friends = Utils.getUserFriends(user_id)
@@ -102,17 +103,22 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
 
     elites_influence = User_Similarity.get_user_based_influence(user_id, elites_similarity, item_id, original_score)
     print(f'elites influence: {elite_influence}%')
-    
+    '''
+
     # SORT item influence dict
     sorted_items_influence = sorted(item_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 5
     print(Utils.getItemData(item_id))
     print(f'top {k} items %influencers')
+    '''
     while i < k:
         print(f'{sorted_items_influence[i]} {user_ratings[sorted_items_influence[i][0]]} {model.get(sorted_items_influence[i][0],item_id)}')
         print(Utils.getItemData(sorted_items_influence[i][0]))
         i += 1
-    
+    '''
+    print(sorted_items_influence)
+
+    '''
     # SORT cat influence dict
     sorted_cat_influence = sorted(cat_influence.items(), key=operator.itemgetter(1), reverse=True)
     i, k = 0, 10
@@ -121,6 +127,7 @@ def get_full_explanation(model_id, user_id, item_id, original_score):
     while i < k:
         print(f'{sorted_cat_influence[i]}')
         i += 1
+    '''
 
 
 def get_influence(user_ratings, items_list, item_id, model, original_score):
@@ -156,8 +163,7 @@ def get_most_similar_items(model, item_id):
     '''
         Returns the sorted dict of items most useful and similar to the input item
 
-        utility -> good rating
-        similarity -> item-item similarity value
+        item_id -> city-wide numerical id
     '''
 
     sim_model = Recommender.load_model(model)
@@ -166,20 +172,66 @@ def get_most_similar_items(model, item_id):
     
     scores = {}
     for item in items:
-        scores[item['id']] = item['rating'] * sim_model.get(item['id'], item_id)
+        scores[item['id']] = sim_model.get(item['id'], item_id)
 
-    # prints results
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
+    '''
+    # prints results
     i, k = 0, 5
     item_data = Utils.getItemData(item_id, items_df)
-    print(item_data)
-    print(f'since you liked {item_data["name"]}, we recommend:\n')
     while i < k:
         print(sorted_scores[i])
         print(Utils.getItemData(sorted_scores[i][0], items_df))
         i += 1
-    
+    '''
+
     return sorted_scores
+
+
+def getItemBasedRecommendation(model, user_id, item_id=None):
+    '''
+        Returns the user's recommendation based on the items most similar to the chosen item
+
+        Step 1: determine chosen item
+        Step 2: fetch items most similar to it
+        Step 3: run recommender with a filter on items available for recommendation
+        Step 4: recommend top items, "Items similar to this item: ..."
+    '''
+
+    # step 1
+    if item_id is None:
+        # get user liked items
+        users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
+        ra = Utils.getUserData(user_id, users_df)['average']
+        user_ratings = Utils.getUserRatingsForCity(user_id)
+        user_liked_items = dict(filter(lambda elem: elem[1] >= ra, user_ratings.items()))
+        user_rated_items_ids = user_ratings.keys()
+        index = random.randrange(len(user_rated_items_ids)-1)
+        item_id = user_rated_items_ids[index]
+
+    # step 2
+    items_list = get_most_similar_items(model, item_id)
+    items_list = items_list[0:len(items_list)/4]
+    items_list = [i[0] for i in items_list] # selecting the top 25% most similar items
+
+    # step 3
+    recommendation_dict = Recommender.get_recommendation(user_id, MODEL)
+    filtered_recommendation_dict = dict(filter(lambda elem: elem[0] in items_list, recommendation_dict.items()))
+    
+    # step 4
+    sorted_final_ratings = sorted(filtered_recommendation_dict.items(), key=operator.itemgetter(1), reverse=True)
+    i, k = 0, 5
+    print(f'top {k} items')
+    while i < k:
+        if Utils.getItemData(sorted_final_ratings[i][0])['rating'] >= 3.0:
+            print(sorted_final_ratings[i])
+            print(Utils.getItemData(sorted_final_ratings[i][0]))
+            i += 1
+        else:
+            i += 1
+            k += 1
+
+    return None
 
 
 def getFriendsBasedRecommendation(model, user_id):
@@ -224,7 +276,7 @@ def getFriendsBasedRecommendation(model, user_id):
     i, k = 0, 5
     print(f'top {k} items')
     while i < k:
-        if Utils.getItemData(sorted_final_ratings[i][0])['rating'] > 3.0:
+        if Utils.getItemData(sorted_final_ratings[i][0])['rating'] >= 3.0:
             print(sorted_final_ratings[i])
             print(Utils.getItemData(sorted_final_ratings[i][0]))
             i += 1
@@ -237,15 +289,13 @@ def getFriendsBasedRecommendation(model, user_id):
 
 # For Testing Purposes
 if __name__ == '__main__':
-    user_id = 'V4TPbscN8JsFbEFiwOVBKw'
     user_id = 'GlxJs5r01_yqIgb4CYtiog'
-    
-    #get_full_explanation(MODEL, user_id, '102', 3.428578365286457)
+    item_id = '0'
     
     #item_id = select_random_user_liked_item(user_id)
     #get_most_similar_items(MODEL, item_id)
     
-    item_id = '2030'
+    #get_full_explanation(MODEL, user_id, item_id, 4)
     #get_explanation_from_item(MODEL, user_id, item_id)
 
-    getFriendsBasedRecommendation(MODEL, user_id)
+    #getFriendsBasedRecommendation(MODEL, user_id)
