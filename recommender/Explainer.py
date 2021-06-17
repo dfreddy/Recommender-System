@@ -259,12 +259,19 @@ def getFriendsBasedRecommendation(model, user_id):
 
     items_ids = Utils.getAllItemsIDs()
     friends_items = []
+    users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
     
     for item in items_ids:
         users = Utils.getUsersThatRatedItem(item, user_filter=user_friends, json_data=json_data)
-        if len(users) > 1: # have at least more than 1 friend rate an item to be considered
-            avg_rating = Utils.getFilteredAverageItemRating(item, users, json_data=json_data)
-            if avg_rating >= 3.5: # anything rounded up to 4 is considered a good rating
+        if len(users) > 2: # have at least more than 2 friend rate an item to be considered
+            # check which friends liked the item
+            friends_liked = 0
+            for u in users: 
+                ra = Utils.getUserData(u, users_df)['average']
+                if ra <= json_data[item][u]:
+                    friends_liked += 1
+            # add item if majority of friends like the item
+            if friends_liked >= len(users)/2:
                 friends_items.append(item)
 
     # step 3
