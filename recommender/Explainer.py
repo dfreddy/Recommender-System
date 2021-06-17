@@ -231,7 +231,7 @@ def getItemBasedRecommendation(model, user_id, item_id=None):
             i += 1
             k += 1
 
-    return None
+    return sorted_final_ratings
 
 
 def getFriendsBasedRecommendation(model, user_id):
@@ -239,7 +239,7 @@ def getFriendsBasedRecommendation(model, user_id):
         Returns the user's recommendation based on their friends' most liked items
 
         Step 1: fetch user's friends
-        Step 2: fetch items liked by all friends (mean friends ratings for items > 4)
+        Step 2: fetch items liked by majority of friends
         Step 3: run recommender with a filter on items available for recommendation
         Step 4: recommend top items, "Because your friends like these items, ..."
     '''
@@ -291,7 +291,56 @@ def getFriendsBasedRecommendation(model, user_id):
             i += 1
             k += 1
 
-    return None
+    return sorted_final_ratings
+
+
+def getCategoryBasedRecommendation(model, user_id):
+    '''
+        Returns the user's recommendation based on one of their liked categories
+
+        Step 1: determine chosen category
+        Step 2: fetch items from category
+        Step 3: run recommender with a filter on items available for recommendation
+        Step 4: recommend top items, "Because you like this category: ..."
+    '''
+
+    # step 1
+    # get user liked items
+    users_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/users.csv')
+    ra = Utils.getUserData(user_id, users_df)['average']
+    user_ratings = Utils.getUserRatingsForCity(user_id)
+    user_liked_items = dict(filter(lambda elem: elem[1] >= ra, user_ratings.items()))
+    user_rated_items_ids = user_ratings.keys()
+    # get list of categories of liked items
+    items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
+    categories_list = []
+    for j in user_rated_items_ids:
+        categories_list.append(Utils.getItemData(j, items_df)['categories'].replace(', ', ',').split(','))
+    # choose category
+    index = random.randrange(len(categories_list)-1)
+    category = categories_list[index]
+
+    # step 2
+    items_list = Utils.getAllItemsFromCategory(category)
+
+    # step 3
+    recommendation_dict = Recommender.get_recommendation(user_id, MODEL)
+    filtered_recommendation_dict = dict(filter(lambda elem: elem[0] in items_list, recommendation_dict.items()))
+    
+    # step 4
+    sorted_final_ratings = sorted(filtered_recommendation_dict.items(), key=operator.itemgetter(1), reverse=True)
+    i, k = 0, 5
+    print(f'top {k} items')
+    while i < k:
+        if Utils.getItemData(sorted_final_ratings[i][0])['rating'] >= 3.0:
+            print(sorted_final_ratings[i])
+            print(Utils.getItemData(sorted_final_ratings[i][0]))
+            i += 1
+        else:
+            i += 1
+            k += 1
+
+    return sorted_final_ratings
 
 
 # For Testing Purposes

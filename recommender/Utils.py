@@ -380,6 +380,18 @@ def getItemIdByBusiness(biz, business_df=None, city_name=None):
   return business_df["id"].values[index[0]]
 
 
+def getAllItemsFromCategory(cat):
+  '''
+      Returns a list of items' ids that belong to the category
+  '''
+
+  items_df = pd.read_csv('../yelp_dataset/resources/'+CITY+'/businesses.csv')
+
+  subset = items_df[cat in items_df['categories']]
+
+  return subset['id'].tolist()
+
+
 def getAllItems():
   '''
       Returns a dict of all items' data
